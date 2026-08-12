@@ -35,3 +35,78 @@ button {
   background: transparent;
   color: var(--fg);
 }
+
+fieldset {
+  border: 1px solid var(--accent);
+  border-radius: 0.5rem;
+  margin-block: 0.75rem;
+}
+
+label {
+  display: block;
+  margin-block: 0.5rem;
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  margin-block-end: 1rem;
+}
+
+.company-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 0.75rem;
+}
+
+.hero-card {
+  border: 1px solid var(--accent);
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.75rem;
+}
+
+.hero-card.active {
+  outline: 2px solid var(--accent);
+}
+
+.hero-card header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.badge {
+  display: inline-block;
+  font-size: 0.75rem;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 0.1rem 0.5rem;
+  margin-inline-end: 0.25rem;
+}
+
+.hero-card table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.hero-card td {
+  padding: 0.15rem 0.25rem;
+}
+
+.die-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.roll-panel,
+.hero-form {
+  border: 1px solid var(--accent);
+  border-radius: 0.5rem;
+  padding: 0.75rem 1rem;
+  margin-block: 1rem;
+}

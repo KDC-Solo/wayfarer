@@ -5,9 +5,10 @@ journeys, resource tracking, and a chronicle of the campaign, without any licens
 shipping in the app. See [`strider-mode-companion-prd.md`](strider-mode-companion-prd.md) for
 the full product requirements and design rationale.
 
-**Status: Milestone 0 — Foundations.** App shell, persistence, the append-only log, and full
-state export/import are in place; there's nothing to play yet. Milestone 1 (a playable hero
-and dice engine) is next.
+**Status: Milestone 1.** Create a company of up to four heroes, roll skills in any of the
+three dice input modes (app rolls / player rolls / hybrid), and track live resources with
+Weary/Miserable and single-step undo. The UI is plain, not polished — this milestone's bar is
+"playable at the table with the books," not visual design. Milestone 2 (the oracle) is next.
 
 ## Design commitments
 

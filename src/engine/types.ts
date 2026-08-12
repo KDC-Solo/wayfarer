@@ -1,13 +1,53 @@
-// Core data model — PRD §7. Milestone 0 (Foundations) needs Chronicle and
-// LogEntry fully typed since everything else derives from them; Hero is a
-// minimal stub here and gets its full shape in Phase 1 (F1.1).
+// Core data model — PRD §7.
 
 export type DiceInputMode = 'app-rolls' | 'player-rolls' | 'hybrid';
 
-/** Placeholder — Phase 1 (F1.1) adds attributes, skills, resources, etc. */
+export interface Attributes {
+  strength: number;
+  heart: number;
+  wits: number;
+}
+
+/**
+ * Live per-hero resources (F1.14). Endurance doubles as the Fatigue
+ * threshold — a hero is Weary once Fatigue reaches current Endurance
+ * (F1.15) — so there is deliberately no separate "max Endurance" field;
+ * damage lowers Endurance directly, which is what makes a hurt hero grow
+ * Weary sooner. Starting values are entered by the player from their own
+ * character sheet; the app does not compute them.
+ */
+export interface Resources {
+  endurance: number;
+  hope: number;
+  fatigue: number;
+  shadow: number;
+  shadowPoints: number;
+  shadowScars: number;
+}
+
+/**
+ * F1.1. Skill and combat-proficiency names are open string keys, not a
+ * fixed union — `src/data/skills.ts` seeds the standard eighteen as a
+ * starting point (NG2: the app is not a rules teacher; the player's own
+ * book is authoritative, and every field here is editable per N7).
+ */
 export interface Hero {
   id: string;
   name: string;
+  culture: string;
+  calling: string;
+  attributes: Attributes;
+  /** skill name -> rank */
+  skills: Record<string, number>;
+  /** proficiency name -> rank */
+  combatProficiencies: Record<string, number>;
+  valour: number;
+  wisdom: number;
+  virtues: string[];
+  rewards: string[];
+  gear: string[];
+  patron: string;
+  resources: Resources;
 }
 
 export interface Chronicle {
@@ -18,6 +58,8 @@ export interface Chronicle {
   currentLocation: string;
   phaseCount: number;
   company: Hero[];
+  /** F1.3 — all rolls default to this hero. Null only when the company is empty. */
+  activeHeroId: string | null;
   diceInputMode: DiceInputMode;
   /** Session ids, most recent last. Sessions themselves aren't modeled yet. */
   sessionList: string[];
@@ -26,6 +68,7 @@ export interface Chronicle {
 export type LogEntryType =
   | 'roll'
   | 'resource-change'
+  | 'company-change'
   | 'oracle'
   | 'prose'
   | 'journey-event'
@@ -50,4 +93,6 @@ export interface LogEntry {
   sessionId: string | null;
 }
 
-export const SCHEMA_VERSION = 1;
+// Bumped for the Phase 1 data model (full Hero, Chronicle.activeHeroId).
+// No migration path from schema 1 — nothing shipped against it yet.
+export const SCHEMA_VERSION = 2;
