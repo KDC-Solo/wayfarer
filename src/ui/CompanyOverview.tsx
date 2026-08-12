@@ -49,14 +49,17 @@ export function CompanyOverview({
           </select>
         </label>
         <span>
-          Solo balancing adjustment (TN 18 − Attribute):{' '}
-          <strong>{soloAdjustment ? 'active' : 'inactive'}</strong> (F1.5 — follows company
-          size)
+          Solo balancing (TN 18 − Attribute):{' '}
+          <strong>{soloAdjustment ? 'active' : 'inactive'}</strong> — follows company size
         </span>
-        <button onClick={onUndo} disabled={!canUndo}>
-          Undo last resource change
+        <button className="ghost" onClick={onUndo} disabled={!canUndo}>
+          ↩ Undo
         </button>
-        {chronicle.company.length < 4 && <button onClick={onAddHero}>Add hero</button>}
+        {chronicle.company.length < 4 && (
+          <button className="primary" onClick={onAddHero}>
+            + Add hero
+          </button>
+        )}
       </div>
 
       <div className="company-grid">

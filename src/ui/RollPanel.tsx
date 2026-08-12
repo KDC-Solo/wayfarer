@@ -163,7 +163,9 @@ export function RollPanel({
             Spend Hope (+{attributeValue})
           </label>
           {weary && <p role="status">Weary — Success dice showing 1–3 will count as zero.</p>}
-          <button onClick={beginRoll}>Roll</button>
+          <button className="primary big" onClick={beginRoll}>
+            🎲 Roll
+          </button>
         </>
       )}
 

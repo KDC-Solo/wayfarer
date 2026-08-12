@@ -249,14 +249,16 @@ function JourneySummaryView({
 
   return (
     <section className="roll-panel">
-      <h3>Journey complete (F3.10)</h3>
+      <h3>🎉 You have arrived</h3>
       <pre style={{ whiteSpace: 'pre-wrap' }}>{summary}</pre>
       <label>
         Save route as
         <input value={routeName} onChange={(e) => setRouteName(e.target.value)} />
       </label>
-      <button onClick={() => onSaveRoute(saveAsRoute(journey, routeName))}>Save as route (F3.11)</button>{' '}
-      <button onClick={onDismiss}>Done</button>
+      <button onClick={() => onSaveRoute(saveAsRoute(journey, routeName))}>Save as route</button>{' '}
+      <button className="primary" onClick={onDismiss}>
+        Done
+      </button>
     </section>
   );
 }

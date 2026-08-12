@@ -73,7 +73,7 @@ export function JourneyPlanner({ company, stepTemplates, routes, onBegin }: Prop
       </label>
 
       <fieldset>
-        <legend>Waypoints (F3.1)</legend>
+        <legend>Waypoints</legend>
         {waypoints.map((wp, i) => (
           <div key={i}>
             <input placeholder="Name" value={wp.name} onChange={(e) => updateWaypoint(i, { name: e.target.value })} />
@@ -107,7 +107,7 @@ export function JourneyPlanner({ company, stepTemplates, routes, onBegin }: Prop
       </fieldset>
 
       <label>
-        Step template (F3.2)
+        Step template
         <select value={templateId} onChange={(e) => setTemplateId(e.target.value)}>
           {stepTemplates.map((t) => (
             <option key={t.id} value={t.id}>
@@ -119,7 +119,7 @@ export function JourneyPlanner({ company, stepTemplates, routes, onBegin }: Prop
 
       {company.length > 1 && (
         <fieldset>
-          <legend>Roles (F3.5 — multi-hero company)</legend>
+          <legend>Roles</legend>
           {JOURNEY_ROLES.map((role) => (
             <label key={role}>
               {role}
@@ -139,8 +139,8 @@ export function JourneyPlanner({ company, stepTemplates, routes, onBegin }: Prop
         </fieldset>
       )}
 
-      <button onClick={begin} disabled={waypoints.length === 0 || !templateId}>
-        Begin journey
+      <button className="primary big" onClick={begin} disabled={waypoints.length === 0 || !templateId}>
+        🗺️ Begin journey
       </button>
     </section>
   );

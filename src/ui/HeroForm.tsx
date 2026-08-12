@@ -82,7 +82,9 @@ export function HeroForm({ onCreate, onCancel }: { onCreate: (hero: Hero) => voi
           <input type="number" value={hope} onChange={(e) => setHope(Number(e.target.value))} />
         </label>
       </fieldset>
-      <button type="submit">Add to company</button>{' '}
+      <button type="submit" className="primary">
+        Add to company
+      </button>{' '}
       <button type="button" onClick={onCancel}>
         Cancel
       </button>

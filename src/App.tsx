@@ -50,8 +50,12 @@ import { JourneyRunner } from './ui/JourneyRunner.tsx';
 import { StepTemplateEditor } from './ui/StepTemplateEditor.tsx';
 import { FellowshipPlanner } from './ui/FellowshipPlanner.tsx';
 import { FellowshipRunner } from './ui/FellowshipRunner.tsx';
+import { Nav, type TabId } from './ui/Nav.tsx';
+import { BrandMark } from './ui/BrandMark.tsx';
+import { Welcome } from './ui/Welcome.tsx';
 
 export default function App() {
+  const [tab, setTab] = useState<TabId>('company');
   const [chronicle, setChronicle] = useState<Chronicle | null>(null);
   const [log, setLog] = useState<LogEntry[]>([]);
   const [oracleTables, setOracleTables] = useState<OracleTable[]>([]);
@@ -241,6 +245,7 @@ export default function App() {
     await putJourney(journey);
     setJourneys((j) => [...j, journey]);
     setActiveJourneyId(journey.id);
+    setTab('journey');
   }
 
   async function handleJourneyApply(params: { chronicle: Chronicle; journey: Journey; logEntries: LogEntry[] }) {
@@ -275,6 +280,7 @@ export default function App() {
     setChronicle(nextChronicle);
     setFellowshipPhases((p) => [...p, phase]);
     setActiveFellowshipPhaseId(phase.id);
+    setTab('fellowship');
   }
 
   async function handleFellowshipApply(params: {
@@ -327,106 +333,163 @@ export default function App() {
     ? (stepTemplates.find((t) => t.id === activeFellowshipPhase.stepTemplateId) ?? null)
     : null;
 
+  const hasCompany = chronicle.company.length > 0;
+
+  const importControl = (
+    <>
+      <button className="ghost" onClick={handleExport}>
+        Export
+      </button>
+      <button className="ghost" onClick={() => fileInputRef.current?.click()}>
+        Import
+      </button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="application/json"
+        hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) handleImportFile(file);
+          e.target.value = '';
+        }}
+      />
+    </>
+  );
+
   return (
-    <main>
-      <h1>Wayfarer</h1>
-      <p>Strider Mode Companion.</p>
+    <>
+      <header className="app-header">
+        <div className="brand">
+          <BrandMark className="brand-mark" />
+          <span>Wayfarer</span>
+        </div>
+        {hasCompany && (
+          <Nav
+            active={tab}
+            onChange={setTab}
+            liveJourney={activeJourney?.status === 'in-progress'}
+            liveFellowship={activeFellowshipPhase?.status === 'in-progress'}
+          />
+        )}
+      </header>
 
-      <CompanyOverview
-        chronicle={chronicle}
-        onSetActive={handleSetActive}
-        onRemove={handleRemoveHero}
-        onResourceDelta={handleResourceDelta}
-        onUndo={handleUndo}
-        canUndo={lastResourceChange !== null}
-        onDiceModeChange={handleDiceModeChange}
-        onAddHero={() => setShowHeroForm(true)}
-      />
+      <main>
+        {!hasCompany ? (
+          <>
+            <Welcome onCreateHero={() => setShowHeroForm(true)} />
+            {showHeroForm && <HeroForm onCreate={handleAddHero} onCancel={() => setShowHeroForm(false)} />}
+          </>
+        ) : (
+          <div className="view">
+            {tab === 'company' && (
+              <>
+                <div className="view-intro">
+                  <h2>Company</h2>
+                  <p>Your heroes, their resources, and the active roll.</p>
+                </div>
+                <CompanyOverview
+                  chronicle={chronicle}
+                  onSetActive={handleSetActive}
+                  onRemove={handleRemoveHero}
+                  onResourceDelta={handleResourceDelta}
+                  onUndo={handleUndo}
+                  canUndo={lastResourceChange !== null}
+                  onDiceModeChange={handleDiceModeChange}
+                  onAddHero={() => setShowHeroForm(true)}
+                />
+                {showHeroForm && <HeroForm onCreate={handleAddHero} onCancel={() => setShowHeroForm(false)} />}
+                {activeHero && (
+                  <RollPanel
+                    hero={activeHero}
+                    companySize={chronicle.company.length}
+                    diceInputMode={chronicle.diceInputMode}
+                    onResolved={handleRollResolved}
+                  />
+                )}
+              </>
+            )}
 
-      {showHeroForm && <HeroForm onCreate={handleAddHero} onCancel={() => setShowHeroForm(false)} />}
+            {tab === 'oracle' && (
+              <>
+                <div className="view-intro">
+                  <h2>Oracle</h2>
+                  <p>Ask a yes/no question, or roll on any table — yours or the shipped skeletons.</p>
+                </div>
+                <OraclePanel diceInputMode={chronicle.diceInputMode} onLog={handleOracleLog} />
+                <TableRoller tables={oracleTables} onLog={handleTableRollLog} />
+                <TableEditor
+                  tables={oracleTables}
+                  onCreate={handleCreateTable}
+                  onUpdate={handleUpdateTable}
+                  onDelete={handleDeleteTable}
+                />
+              </>
+            )}
 
-      {activeHero && (
-        <RollPanel
-          hero={activeHero}
-          companySize={chronicle.company.length}
-          diceInputMode={chronicle.diceInputMode}
-          onResolved={handleRollResolved}
-        />
-      )}
+            {tab === 'journey' &&
+              (activeJourney && activeJourneyTemplate ? (
+                <JourneyRunner
+                  chronicle={chronicle}
+                  journey={activeJourney}
+                  template={activeJourneyTemplate}
+                  oracleTables={oracleTables}
+                  log={log}
+                  onApply={handleJourneyApply}
+                  onSaveRoute={handleSaveRoute}
+                  onDismiss={() => setActiveJourneyId(null)}
+                />
+              ) : (
+                <JourneyPlanner
+                  company={chronicle.company}
+                  stepTemplates={stepTemplates}
+                  routes={routes}
+                  onBegin={handleBeginJourney}
+                />
+              ))}
 
-      <OraclePanel diceInputMode={chronicle.diceInputMode} onLog={handleOracleLog} />
+            {tab === 'fellowship' &&
+              (activeFellowshipPhase && activeFellowshipTemplate ? (
+                <FellowshipRunner
+                  chronicle={chronicle}
+                  phase={activeFellowshipPhase}
+                  template={activeFellowshipTemplate}
+                  oracleTables={oracleTables}
+                  onApply={handleFellowshipApply}
+                  onDismiss={() => setActiveFellowshipPhaseId(null)}
+                />
+              ) : (
+                <FellowshipPlanner
+                  companySize={chronicle.company.length}
+                  stepTemplates={stepTemplates}
+                  onBegin={handleBeginFellowshipPhase}
+                />
+              ))}
 
-      <TableRoller tables={oracleTables} onLog={handleTableRollLog} />
+            {tab === 'templates' && (
+              <>
+                <div className="view-intro">
+                  <h2>Step templates</h2>
+                  <p>The same engine drives journeys and Fellowship phases — edit either here.</p>
+                </div>
+                <StepTemplateEditor
+                  templates={stepTemplates}
+                  oracleTables={oracleTables}
+                  onCreate={handleCreateStepTemplate}
+                  onUpdate={handleUpdateStepTemplate}
+                  onDelete={handleDeleteStepTemplate}
+                />
+              </>
+            )}
+          </div>
+        )}
 
-      <TableEditor
-        tables={oracleTables}
-        onCreate={handleCreateTable}
-        onUpdate={handleUpdateTable}
-        onDelete={handleDeleteTable}
-      />
-
-      {activeJourney && activeJourneyTemplate ? (
-        <JourneyRunner
-          chronicle={chronicle}
-          journey={activeJourney}
-          template={activeJourneyTemplate}
-          oracleTables={oracleTables}
-          log={log}
-          onApply={handleJourneyApply}
-          onSaveRoute={handleSaveRoute}
-          onDismiss={() => setActiveJourneyId(null)}
-        />
-      ) : (
-        <JourneyPlanner
-          company={chronicle.company}
-          stepTemplates={stepTemplates}
-          routes={routes}
-          onBegin={handleBeginJourney}
-        />
-      )}
-
-      {activeFellowshipPhase && activeFellowshipTemplate ? (
-        <FellowshipRunner
-          chronicle={chronicle}
-          phase={activeFellowshipPhase}
-          template={activeFellowshipTemplate}
-          oracleTables={oracleTables}
-          onApply={handleFellowshipApply}
-          onDismiss={() => setActiveFellowshipPhaseId(null)}
-        />
-      ) : (
-        <FellowshipPlanner
-          companySize={chronicle.company.length}
-          stepTemplates={stepTemplates}
-          onBegin={handleBeginFellowshipPhase}
-        />
-      )}
-
-      <StepTemplateEditor
-        templates={stepTemplates}
-        oracleTables={oracleTables}
-        onCreate={handleCreateStepTemplate}
-        onUpdate={handleUpdateStepTemplate}
-        onDelete={handleDeleteStepTemplate}
-      />
-
-      <footer>
-        <button onClick={handleExport}>Export state</button>{' '}
-        <button onClick={() => fileInputRef.current?.click()}>Import state</button>
-        <input
-          ref={fileInputRef}
-          type="file"
-          accept="application/json"
-          hidden
-          onChange={(e) => {
-            const file = e.target.files?.[0];
-            if (file) handleImportFile(file);
-            e.target.value = '';
-          }}
-        />
-        <p>{log.length} log entries.</p>
-        {status && <p role="status">{status}</p>}
-      </footer>
-    </main>
+        <footer className="app-footer">
+          {importControl}
+          <span>{log.length} log entries</span>
+          {status && <span role="status">{status}</span>}
+        </footer>
+      </main>
+    </>
   );
 }

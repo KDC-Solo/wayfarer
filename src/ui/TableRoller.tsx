@@ -102,7 +102,7 @@ export function TableRoller({ tables, onLog }: Props) {
             <p>{resultText}</p>
           ) : (
             <label>
-              This row is empty — enter a result yourself (F2.6, play never blocks)
+              This row is empty — enter a result yourself, play never blocks
               <input value={manualText} onChange={(e) => setManualText(e.target.value)} />
             </label>
           )}

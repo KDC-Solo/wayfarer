@@ -19,8 +19,8 @@ export default defineConfig({
         short_name: 'Wayfarer',
         description:
           'Local-first solo companion for The One Ring 2e (Strider Mode) — dice, oracle, journeys, chronicle.',
-        theme_color: '#2f3a2f',
-        background_color: '#2f3a2f',
+        theme_color: '#12140f',
+        background_color: '#12140f',
         display: 'standalone',
         icons: [],
       },

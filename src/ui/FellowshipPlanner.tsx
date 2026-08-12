@@ -35,8 +35,8 @@ export function FellowshipPlanner({ companySize, stepTemplates, onBegin }: Props
           ))}
         </select>
       </label>
-      <button onClick={() => onBegin(templateId)} disabled={!templateId}>
-        Advance year &amp; open Fellowship Phase (F4.1)
+      <button className="primary big" onClick={() => onBegin(templateId)} disabled={!templateId}>
+        🏕️ Advance year &amp; open Fellowship Phase
       </button>
     </section>
   );

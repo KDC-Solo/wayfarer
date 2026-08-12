@@ -229,7 +229,7 @@ function ExperiencePanel({
       </p>
 
       <fieldset>
-        <legend>Award milestone (F4.2, Strider Mode p.21)</legend>
+        <legend>Award milestone</legend>
         <select value={milestoneName} onChange={(e) => setMilestoneName(e.target.value)}>
           {EXPERIENCE_MILESTONES.map((m) => (
             <option key={m.name} value={m.name}>
@@ -241,7 +241,7 @@ function ExperiencePanel({
       </fieldset>
 
       <fieldset>
-        <legend>Spend experience (F4.4)</legend>
+        <legend>Spend experience</legend>
         <label>
           Currency
           <select value={currency} onChange={(e) => setCurrency(e.target.value as ExperienceCurrency)}>
@@ -302,10 +302,12 @@ function PatronErrandView({
     <section className="roll-panel">
       <h3>Fellowship Phase complete — Year {phase.year}</h3>
       <label>
-        Next patron errand (F4.5)
+        Next patron errand
         <input value={errand} onChange={(e) => setErrand(e.target.value)} />
       </label>
-      <button onClick={save}>Save &amp; done</button>
+      <button className="primary" onClick={save}>
+        Save &amp; done
+      </button>
     </section>
   );
 }

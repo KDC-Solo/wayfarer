@@ -59,8 +59,8 @@ export function OraclePanel({ diceInputMode, onLog }: Props) {
               ))}
             </select>
           </label>
-          <button onClick={ask} disabled={!question.trim()}>
-            Ask
+          <button className="primary big" onClick={ask} disabled={!question.trim()}>
+            🔮 Ask
           </button>
         </>
       )}

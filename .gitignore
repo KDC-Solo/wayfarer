@@ -9,3 +9,6 @@ dist-ssr/
 test-results/
 *.tsbuildinfo
 *.local
+
+# Claude Code harness-local state, not project content
+.claude/
