@@ -5,17 +5,19 @@ journeys, resource tracking, and a chronicle of the campaign, without any licens
 shipping in the app. See [`strider-mode-companion-prd.md`](strider-mode-companion-prd.md) for
 the full product requirements and design rationale.
 
-**Status: Milestone 3.** Create a company of up to four heroes, roll skills in any of the
+**Status: Phase 4 of 7.** Create a company of up to four heroes, roll skills in any of the
 three dice input modes, track live resources with Weary/Miserable and single-step undo, ask
-the Telling Table a yes/no question, roll on (or define your own) oracle tables, and now run
-full journeys: define waypoints, execute a configurable step-by-step template per leg (with
-the Solo Journey Events + seven Event Detail tables shipped as skeletons, and journey roles
-that correctly drop out for a solo company), pause/resume/abandon mid-route, and get a
-pasteable summary on arrival. The step template editor lets you edit, reorder, duplicate, and
-disable steps, or build your own template from scratch. The UI is plain, not polished — the
-bar through this milestone is "a winter journey runs end to end and produces a summary worth
-pasting into a journal" (the PRD's own Milestone 3 bar). Milestone 4 (Fellowship phase +
-combat, reusing this same step template engine) is next.
+the Telling Table a yes/no question, roll on (or define your own) oracle tables, run full
+journeys (waypoints, a configurable step-by-step template per leg, pause/resume/abandon,
+a pasteable summary on arrival), and now run Fellowship Phases too: advance the year,
+step through each hero's downtime (Strider Mode's verified three-tier Spiritual Recovery,
+a Fatigue reset, undertakings), award Adventure/Skill Points from the verified Experience
+Milestones list, spend them on skill ranks/proficiencies/Valour/Wisdom, and set the next
+patron errand. Fellowship and journeys share the same underlying step-template engine — a
+concrete demonstration of the PRD's "build it once, reuse it" design. The UI is plain, not
+polished. Phase 5 (combat) is next — the last piece before Milestone 4's own bar ("a
+chronicle survives three Fellowship phases and a combat without manual bookkeeping outside
+the app") is met.
 
 ## Design commitments
 

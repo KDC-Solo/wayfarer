@@ -27,6 +27,8 @@ export function createHero(input: NewHeroInput): Hero {
     gear: [],
     patron: input.patron ?? '',
     resources: { endurance: 0, hope: 0, fatigue: 0, shadow: 0, shadowPoints: 0, shadowScars: 0 },
+    adventurePoints: 0,
+    skillPoints: 0,
   };
 }
 

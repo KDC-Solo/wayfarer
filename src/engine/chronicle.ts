@@ -19,3 +19,8 @@ export function createChronicle(): Chronicle {
 export function setDiceInputMode(chronicle: Chronicle, mode: DiceInputMode): Chronicle {
   return { ...chronicle, diceInputMode: mode };
 }
+
+/** F4.1 — opening a Fellowship Phase advances the chronicle by one year. */
+export function advanceYear(chronicle: Chronicle): Chronicle {
+  return { ...chronicle, currentYear: chronicle.currentYear + 1, phaseCount: chronicle.phaseCount + 1 };
+}

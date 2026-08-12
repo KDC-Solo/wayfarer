@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { changeResource, recordJourneyEvent, recordSkillRoll, recordTableRoll } from '../engine/actions.ts';
+import { recordJourneyEvent, recordSkillRoll, recordTableRoll } from '../engine/actions.ts';
 import type { OracleTable } from '../engine/oracleTable.ts';
 import {
   abandonJourney,
@@ -15,6 +15,7 @@ import type { JourneyRole, StepTemplate, StepTemplateStep } from '../engine/step
 import type { Chronicle, LogEntry } from '../engine/types.ts';
 import { RollPanel } from './RollPanel.tsx';
 import { TableRoller } from './TableRoller.tsx';
+import { ResourceChangeStepUI } from './ResourceChangeStepUI.tsx';
 
 interface ApplyParams {
   chronicle: Chronicle;
@@ -204,61 +205,32 @@ function StepUI({
   }
 
   if (step.type === 'resource-change') {
+    const affectedHeroIds =
+      step.scope === 'whole-company'
+        ? chronicle.company.map((h) => h.id)
+        : step.scope === 'active-hero'
+          ? chronicle.activeHeroId
+            ? [chronicle.activeHeroId]
+            : []
+          : (() => {
+              const heroId = resolveRoleHero(journey, chronicle, step.scope as JourneyRole);
+              return heroId ? [heroId] : [];
+            })();
     return (
-      <ResourceChangeStepUI key={step.id} chronicle={chronicle} journey={journey} step={step} onApply={onApply} />
+      <ResourceChangeStepUI
+        key={step.id}
+        chronicle={chronicle}
+        step={step}
+        affectedHeroIds={affectedHeroIds}
+        runId={journey.id}
+        onApplied={({ chronicle: nextChronicle, logEntries }) =>
+          onApply({ chronicle: nextChronicle, journey: completeStep(journey), logEntries })
+        }
+      />
     );
   }
 
   return null; // conditional-branch is auto-resolved before reaching StepUI
-}
-
-function ResourceChangeStepUI({
-  chronicle,
-  journey,
-  step,
-  onApply,
-}: {
-  chronicle: Chronicle;
-  journey: Journey;
-  step: Extract<StepTemplateStep, { type: 'resource-change' }>;
-  onApply: (params: ApplyParams) => void;
-}) {
-  const [amount, setAmount] = useState(step.amount);
-
-  function affectedHeroIds(): string[] {
-    if (step.scope === 'whole-company') return chronicle.company.map((h) => h.id);
-    if (step.scope === 'active-hero') return chronicle.activeHeroId ? [chronicle.activeHeroId] : [];
-    const heroId = resolveRoleHero(journey, chronicle, step.scope as JourneyRole);
-    return heroId ? [heroId] : [];
-  }
-
-  function apply() {
-    let current = chronicle;
-    const entries: LogEntry[] = [];
-    for (const heroId of affectedHeroIds()) {
-      const { chronicle: next, logEntry } = changeResource(
-        current,
-        heroId,
-        step.field,
-        amount,
-        chronicle.diceInputMode,
-        journey.id,
-      );
-      current = next;
-      entries.push(logEntry);
-    }
-    onApply({ chronicle: current, journey: completeStep(journey), logEntries: entries });
-  }
-
-  return (
-    <div>
-      <label>
-        {step.field} change ({step.scope})
-        <input type="number" value={amount} onChange={(e) => setAmount(Number(e.target.value))} />
-      </label>
-      <button onClick={apply}>Apply &amp; continue</button>
-    </div>
-  );
 }
 
 function JourneySummaryView({

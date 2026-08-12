@@ -3,6 +3,7 @@
 // (App.tsx) are responsible for persisting the returned chronicle and entry.
 
 import { replaceHero } from './company.ts';
+import { applyExperienceSpend, awardMilestone, type ExperienceCurrency, type ExperienceMilestone, type ExperienceTarget } from './experience.ts';
 import { createLogEntry } from './log.ts';
 import { applyResourceDelta, setResourceValue, type ResourceField } from './resources.ts';
 import type { SkillRollResult } from './dice.ts';
@@ -32,6 +33,30 @@ export function changeResource(
   const hero = requireHero(chronicle, heroId);
   const from = hero.resources[field];
   const updatedHero = applyResourceDelta(hero, field, delta);
+  const to = updatedHero.resources[field];
+  const logEntry = createLogEntry({
+    type: 'resource-change',
+    heroId,
+    inputMode,
+    payload: { field, from, to },
+    journeyId: journeyId ?? null,
+  });
+  return { chronicle: replaceHero(chronicle, updatedHero), logEntry };
+}
+
+/** Like changeResource, but assigns `value` directly instead of adding a
+ * delta — used for Fellowship-phase Fatigue resets (F4.3). */
+export function setResource(
+  chronicle: Chronicle,
+  heroId: string,
+  field: ResourceField,
+  value: number,
+  inputMode: DiceInputMode,
+  journeyId?: string,
+): ActionResult {
+  const hero = requireHero(chronicle, heroId);
+  const from = hero.resources[field];
+  const updatedHero = setResourceValue(hero, field, value);
   const to = updatedHero.resources[field];
   const logEntry = createLogEntry({
     type: 'resource-change',
@@ -129,4 +154,57 @@ export function recordJourneyEvent(
     prose: message,
     journeyId,
   });
+}
+
+/** F3.7-equivalent for a Fellowship phase (F4.2's prompt/undertaking beats). */
+export function recordFellowshipEvent(
+  fellowshipPhaseId: string,
+  heroId: string | null,
+  message: string,
+): LogEntry {
+  return createLogEntry({
+    type: 'fellowship-event',
+    heroId,
+    prose: message,
+    journeyId: fellowshipPhaseId,
+  });
+}
+
+/** F4.2/experience milestones (p.21) — awards AP/SP and logs it. */
+export function recordMilestoneAward(
+  chronicle: Chronicle,
+  heroId: string,
+  milestone: ExperienceMilestone,
+  fellowshipPhaseId?: string,
+): ActionResult {
+  const hero = requireHero(chronicle, heroId);
+  const updatedHero = awardMilestone(hero, milestone);
+  const logEntry = createLogEntry({
+    type: 'resource-change',
+    heroId,
+    payload: { milestone: milestone.name, adventurePoints: milestone.adventurePoints, skillPoints: milestone.skillPoints },
+    journeyId: fellowshipPhaseId ?? null,
+  });
+  return { chronicle: replaceHero(chronicle, updatedHero), logEntry };
+}
+
+/** F4.4 — spend Adventure/Skill Points on a skill rank, proficiency, Valour,
+ * or Wisdom, validated against the hero's current pool (throws otherwise). */
+export function recordExperienceSpend(
+  chronicle: Chronicle,
+  heroId: string,
+  currency: ExperienceCurrency,
+  cost: number,
+  target: ExperienceTarget,
+  fellowshipPhaseId?: string,
+): ActionResult {
+  const hero = requireHero(chronicle, heroId);
+  const updatedHero = applyExperienceSpend(hero, currency, cost, target);
+  const logEntry = createLogEntry({
+    type: 'resource-change',
+    heroId,
+    payload: { currency, cost, target },
+    journeyId: fellowshipPhaseId ?? null,
+  });
+  return { chronicle: replaceHero(chronicle, updatedHero), logEntry };
 }

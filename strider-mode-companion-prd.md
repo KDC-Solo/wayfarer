@@ -1,7 +1,7 @@
 # Product Requirements Document
 ## Strider Mode Companion — a solo play assistant for The One Ring 2e
 
-**Version:** 1.3 (development baseline)
+**Version:** 1.4 (development baseline)
 **Status:** Approved for development
 **Last updated:** 12 August 2026
 
@@ -12,6 +12,8 @@
 **Changes since 1.1:** F2.1 corrected to match F2.3/the primary source — the Telling Table is a binary yes/no with an extremity flag on rune/Eye, not the six-tier yes-and/yes-but/no-but/no-and scale it previously described (that wording predated checking the book, same root cause as the F2.3 fix).
 
 **Changes since 1.2:** F3.5 clarified — roles are skipped entirely (not just de-emphasised) for a company of one, confirmed directly in Strider Mode rather than inferred from the general solo-adjustment pattern (D11). No numeric journey-procedure values (leg length, Fatigue accrual, roll frequency) were added to F3.3, since those live in the core rulebook, which isn't on file — see D12.
+
+**Changes since 1.3:** F4.3 clarified with the verified "Spiritual Recovery" three-tier mechanic (p.20). F4.4 clarified — "experience" is two separate currencies (Adventure Points, Skill Points), not one generic pool (D13); the app validates spend against whichever pool the player selects rather than assuming which currency pays for which advancement. D14 records why the Fellowship Phase reuses the step-template *interpreter* rather than the `Journey` entity itself.
 
 ---
 
@@ -194,9 +196,9 @@ The journey procedure is implemented as a **configurable step template**, not ha
 
 **F4.2** Present available undertakings per hero, apply their effects, and record the choices.
 
-**F4.3** Resolve Shadow recovery and Fatigue reset for each hero per the downtime rules.
+**F4.3** Resolve Shadow recovery and Fatigue reset for each hero per the downtime rules. For solo play, Strider Mode's "Spiritual Recovery" (p.20) replaces the Loremaster's judgment call with a three-tier player self-assessment: marginal interference with the Shadow (recover 1 point), actively hindering the Enemy (2 points), or a feat drawing the Dark Lord's own attention (3 points).
 
-**F4.4** Spend accumulated experience per hero on skill ranks, proficiencies, Valour, and Wisdom, with validation against current totals.
+**F4.4** Spend accumulated experience per hero on skill ranks, proficiencies, Valour, and Wisdom, with validation against current totals. "Experience" is two separate currencies — Adventure Points and Skill Points (Strider Mode p.21, "Experience Milestones") — earned by different triggers; which currency pays for which advancement is core-rulebook content not on file, so the app validates spend against whichever pool the player selects rather than assuming a fixed mapping.
 
 **F4.5** Prompt for the next patron errand to open the following adventuring phase.
 
@@ -379,3 +381,5 @@ No accounts and no telemetry, so measurement is indirect and qualitative:
 | D10 | Telling Table answer is binary yes/no with an extremity flag (F2.1), not a six-tier yes-and/yes-but/no-but/no-and scale | F2.1's original wording predated checking the book and didn't match the actual table (page 10); corrected to be consistent with D9/F2.3 |
 | D11 | Journey roles (F3.5) are skipped entirely for a company of one, not just de-emphasised | Confirmed on p.3/p.16: "Journey roles are not used in Strider Mode" — the sole Player-hero handles everything. Company size 2-4 still uses roles per §4's "solo company" design |
 | D12 | Default journey step template ships with blank skill/Fatigue-amount fields rather than guessed values | Strider Mode p.16 confirms the base numeric journey procedure lives in the core rulebook, which isn't on file — only the supplement is. What's verified and encoded instead: the Solo Journey Events + seven Event Detail table skeletons (p.17-19) and the Border/Wild/Dark Land → Favoured/normal/Ill-favoured Feat die mapping (p.17) |
+| D13 | F4.4's spend pools are two currencies — Adventure Points and Skill Points — not one generic "experience" | Strider Mode p.21's Experience Milestones table confirms two separate pools with different earn triggers; the engine doesn't guess which currency pays for which advancement (that mapping is core-rulebook content not on file) |
+| D14 | The Fellowship Phase reuses the Phase 3 step template engine via a generic interpreter (`stepRunner.ts`), not by reusing the `Journey` entity itself | A Fellowship Phase iterates per hero turn, not per waypoint, and has no roles/land-danger — genuinely different targeting semantics from a journey. Forcing it into the `Journey` shape would have been the wrong kind of reuse; sharing the branch-resolution algorithm (the actual "Phase 3 engine") is the right kind, and is what F4.6 asks for |

@@ -3,20 +3,22 @@ import type { Chronicle, LogEntry } from './types.ts';
 import type { OracleTable } from './oracleTable.ts';
 import type { StepTemplate } from './stepTemplate.ts';
 import type { Journey, Route } from './journey.ts';
+import type { FellowshipPhase } from './fellowshipPhase.ts';
 
 // IndexedDB for chronicle + log + oracle tables + step templates + journeys
-// + routes (PRD §9 — volume grows unbounded over a campaign); localStorage
-// is reserved for small settings only. One database = one campaign; the
-// app does not manage multiple chronicles.
+// + routes + Fellowship phases (PRD §9 — volume grows unbounded over a
+// campaign); localStorage is reserved for small settings only. One
+// database = one campaign; the app does not manage multiple chronicles.
 
 const DB_NAME = 'wayfarer';
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const CHRONICLE_STORE = 'chronicle';
 const LOG_STORE = 'log';
 const ORACLE_TABLE_STORE = 'oracleTables';
 const STEP_TEMPLATE_STORE = 'stepTemplates';
 const JOURNEY_STORE = 'journeys';
 const ROUTE_STORE = 'routes';
+const FELLOWSHIP_PHASE_STORE = 'fellowshipPhases';
 const SINGLETON_KEY = 'current';
 
 interface WayfarerDB extends DBSchema {
@@ -45,6 +47,10 @@ interface WayfarerDB extends DBSchema {
     key: string;
     value: Route;
   };
+  [FELLOWSHIP_PHASE_STORE]: {
+    key: string;
+    value: FellowshipPhase;
+  };
 }
 
 let dbPromise: Promise<IDBPDatabase<WayfarerDB>> | null = null;
@@ -66,6 +72,9 @@ function getDb(): Promise<IDBPDatabase<WayfarerDB>> {
           db.createObjectStore(STEP_TEMPLATE_STORE, { keyPath: 'id' });
           db.createObjectStore(JOURNEY_STORE, { keyPath: 'id' });
           db.createObjectStore(ROUTE_STORE, { keyPath: 'id' });
+        }
+        if (oldVersion < 4) {
+          db.createObjectStore(FELLOWSHIP_PHASE_STORE, { keyPath: 'id' });
         }
       },
     });
@@ -151,6 +160,16 @@ export async function deleteRoute(id: string): Promise<void> {
   await db.delete(ROUTE_STORE, id);
 }
 
+export async function getAllFellowshipPhases(): Promise<FellowshipPhase[]> {
+  const db = await getDb();
+  return db.getAll(FELLOWSHIP_PHASE_STORE);
+}
+
+export async function putFellowshipPhase(phase: FellowshipPhase): Promise<void> {
+  const db = await getDb();
+  await db.put(FELLOWSHIP_PHASE_STORE, phase);
+}
+
 /** Full local-state reset. Used by tests and by a future "start new campaign" flow. */
 export async function clearAll(): Promise<void> {
   const db = await getDb();
@@ -160,4 +179,5 @@ export async function clearAll(): Promise<void> {
   await db.clear(STEP_TEMPLATE_STORE);
   await db.clear(JOURNEY_STORE);
   await db.clear(ROUTE_STORE);
+  await db.clear(FELLOWSHIP_PHASE_STORE);
 }

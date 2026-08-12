@@ -4,11 +4,16 @@ import { createHero } from './hero.ts';
 import { addHero } from './company.ts';
 import {
   changeResource,
+  recordExperienceSpend,
+  recordFellowshipEvent,
+  recordMilestoneAward,
   recordOracleAnswer,
   recordSkillRoll,
   recordTableRoll,
+  setResource,
   undoResourceChange,
 } from './actions.ts';
+import { EXPERIENCE_MILESTONES, InsufficientExperienceError } from './experience.ts';
 import { resolveSkillRoll } from './dice.ts';
 import { resolveTellingTable } from './tellingTable.ts';
 import { addRow, createOracleTable, rollOnTable } from './oracleTable.ts';
@@ -125,5 +130,61 @@ describe('recordTableRoll', () => {
     expect(entry.type).toBe('oracle');
     expect(entry.payload).toMatchObject({ tableId: table.id, tableName: 'Lore Table', key: 4 });
     expect(entry.prose).toBe('Wargs, probably.');
+  });
+});
+
+describe('setResource (F4.3)', () => {
+  it('assigns the value directly rather than adding a delta', () => {
+    const { chronicle, hero } = setup();
+    const withFatigue = changeResource(chronicle, hero.id, 'fatigue', 5, 'app-rolls').chronicle;
+    const { chronicle: reset, logEntry } = setResource(withFatigue, hero.id, 'fatigue', 0, 'app-rolls');
+    expect(reset.company[0].resources.fatigue).toBe(0);
+    expect(logEntry.payload).toEqual({ field: 'fatigue', from: 5, to: 0 });
+  });
+});
+
+describe('recordFellowshipEvent', () => {
+  it('logs as a fellowship-event tagged with the phase id', () => {
+    const { hero } = setup();
+    const entry = recordFellowshipEvent('phase-1', hero.id, 'Idis mends her boots and rests.');
+    expect(entry.type).toBe('fellowship-event');
+    expect(entry.journeyId).toBe('phase-1');
+    expect(entry.prose).toBe('Idis mends her boots and rests.');
+  });
+});
+
+describe('recordMilestoneAward', () => {
+  it('awards the milestone and logs it against the phase', () => {
+    const { chronicle, hero } = setup();
+    const milestone = EXPERIENCE_MILESTONES.find((m) => m.name === 'Complete a meaningful journey')!;
+    const { chronicle: updated, logEntry } = recordMilestoneAward(chronicle, hero.id, milestone, 'phase-1');
+    expect(updated.company[0].skillPoints).toBe(2);
+    expect(logEntry.journeyId).toBe('phase-1');
+    expect(logEntry.payload).toMatchObject({ milestone: 'Complete a meaningful journey', skillPoints: 2 });
+  });
+});
+
+describe('recordExperienceSpend', () => {
+  it('spends the currency and logs the target advancement', () => {
+    const { chronicle: base, hero } = setup();
+    const chronicle = {
+      ...base,
+      company: base.company.map((h) => (h.id === hero.id ? { ...h, skillPoints: 3 } : h)),
+    };
+    const { chronicle: updated, logEntry } = recordExperienceSpend(chronicle, hero.id, 'skill', 3, {
+      kind: 'skill',
+      name: 'Awareness',
+      newRank: 1,
+    });
+    expect(updated.company[0].skillPoints).toBe(0);
+    expect(updated.company[0].skills.Awareness).toBe(1);
+    expect(logEntry.payload).toMatchObject({ currency: 'skill', cost: 3 });
+  });
+
+  it('throws (and does not persist) when the hero cannot afford it', () => {
+    const { chronicle, hero } = setup();
+    expect(() =>
+      recordExperienceSpend(chronicle, hero.id, 'adventure', 1, { kind: 'valour', newRank: 1 }),
+    ).toThrow(InsufficientExperienceError);
   });
 });

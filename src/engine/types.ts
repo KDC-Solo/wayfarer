@@ -48,6 +48,16 @@ export interface Hero {
   gear: string[];
   patron: string;
   resources: Resources;
+  /**
+   * F4.4's spend pools (Strider Mode p.21, "Experience Milestones"): two
+   * separate currencies, not one generic "experience." Adventure Points and
+   * Skill Points are earned by different milestones and — per the core
+   * rulebook, not on file here — likely spend differently too; the engine
+   * doesn't assume which currency pays for which advancement (see
+   * fellowshipPhase.ts), matching NG2.
+   */
+  adventurePoints: number;
+  skillPoints: number;
 }
 
 export interface Chronicle {
@@ -72,6 +82,7 @@ export type LogEntryType =
   | 'oracle'
   | 'prose'
   | 'journey-event'
+  | 'fellowship-event'
   | 'system';
 
 /**
@@ -89,11 +100,14 @@ export interface LogEntry {
   /** Free-form structured payload; shape depends on `type`. */
   payload: Record<string, unknown>;
   prose: string | null;
+  /** The id of whatever step-template run (Journey or FellowshipPhase)
+   * produced this entry, if any — reused across both rather than adding a
+   * second id field, so chronicle filtering (F6.1) works uniformly. */
   journeyId: string | null;
   sessionId: string | null;
 }
 
-// Bumped for the Phase 3 data model (step templates, journeys, routes). No
-// migration path from earlier schema versions — nothing shipped against
-// them yet.
-export const SCHEMA_VERSION = 4;
+// Bumped for the Phase 4 data model (adventure/skill points, Fellowship
+// phase). No migration path from earlier schema versions — nothing shipped
+// against them yet.
+export const SCHEMA_VERSION = 5;

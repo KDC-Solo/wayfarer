@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { addHero, getActiveHero, removeHero, setActiveHero } from './engine/company.ts';
-import { createChronicle, setDiceInputMode } from './engine/chronicle.ts';
+import { advanceYear, createChronicle, setDiceInputMode } from './engine/chronicle.ts';
 import {
   changeResource,
   recordOracleAnswer,
@@ -8,11 +8,13 @@ import {
   recordTableRoll,
   undoResourceChange,
 } from './engine/actions.ts';
+import { createFellowshipPhase, type FellowshipPhase } from './engine/fellowshipPhase.ts';
 import { createLogEntry } from './engine/log.ts';
 import {
   appendLogEntry,
   deleteOracleTable,
   deleteStepTemplate,
+  getAllFellowshipPhases,
   getAllJourneys,
   getAllLogEntries,
   getAllOracleTables,
@@ -20,6 +22,7 @@ import {
   getAllStepTemplates,
   getChronicle,
   putChronicle,
+  putFellowshipPhase,
   putJourney,
   putOracleTable,
   putRoute,
@@ -35,6 +38,7 @@ import type { ResourceField } from './engine/resources.ts';
 import type { Chronicle, DiceInputMode, Hero, LogEntry } from './engine/types.ts';
 import { defaultOracleTables } from './data/oracleTables.ts';
 import { defaultJourneyContent } from './data/journeyStepTemplates.ts';
+import { defaultFellowshipStepTemplate } from './data/fellowshipStepTemplate.ts';
 import { CompanyOverview } from './ui/CompanyOverview.tsx';
 import { HeroForm } from './ui/HeroForm.tsx';
 import { RollPanel } from './ui/RollPanel.tsx';
@@ -44,6 +48,8 @@ import { TableEditor } from './ui/TableEditor.tsx';
 import { JourneyPlanner } from './ui/JourneyPlanner.tsx';
 import { JourneyRunner } from './ui/JourneyRunner.tsx';
 import { StepTemplateEditor } from './ui/StepTemplateEditor.tsx';
+import { FellowshipPlanner } from './ui/FellowshipPlanner.tsx';
+import { FellowshipRunner } from './ui/FellowshipRunner.tsx';
 
 export default function App() {
   const [chronicle, setChronicle] = useState<Chronicle | null>(null);
@@ -53,6 +59,8 @@ export default function App() {
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [activeJourneyId, setActiveJourneyId] = useState<string | null>(null);
+  const [fellowshipPhases, setFellowshipPhases] = useState<FellowshipPhase[]>([]);
+  const [activeFellowshipPhaseId, setActiveFellowshipPhaseId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [showHeroForm, setShowHeroForm] = useState(false);
   const [lastResourceChange, setLastResourceChange] = useState<LogEntry | null>(null);
@@ -71,11 +79,12 @@ export default function App() {
     let tables = await getAllOracleTables();
     let templates = await getAllStepTemplates();
     if (tables.length === 0) {
-      const { tables: journeyTables, template } = defaultJourneyContent();
+      const { tables: journeyTables, template: journeyTemplate } = defaultJourneyContent();
       tables = [...defaultOracleTables(), ...journeyTables];
       for (const t of tables) await putOracleTable(t);
-      templates = [template];
-      await putStepTemplate(template);
+      const fellowshipTemplate = defaultFellowshipStepTemplate();
+      templates = [journeyTemplate, fellowshipTemplate];
+      for (const t of templates) await putStepTemplate(t);
     }
     setOracleTables(tables);
     setStepTemplates(templates);
@@ -86,6 +95,12 @@ export default function App() {
       loadedJourneys.find((j) => j.status === 'in-progress' || j.status === 'paused')?.id ?? null,
     );
     setRoutes(await getAllRoutes());
+
+    const loadedFellowshipPhases = await getAllFellowshipPhases();
+    setFellowshipPhases(loadedFellowshipPhases);
+    setActiveFellowshipPhaseId(
+      loadedFellowshipPhases.find((p) => p.status === 'in-progress')?.id ?? null,
+    );
   }
 
   useEffect(() => {
@@ -246,6 +261,39 @@ export default function App() {
     setRoutes((r) => [...r, route]);
   }
 
+  async function handleBeginFellowshipPhase(stepTemplateId: string) {
+    if (!chronicle) return;
+    const nextChronicle = advanceYear(chronicle);
+    const phase = createFellowshipPhase({
+      year: nextChronicle.currentYear,
+      location: nextChronicle.currentLocation,
+      stepTemplateId,
+      heroIds: nextChronicle.company.map((h) => h.id),
+    });
+    await putChronicle(nextChronicle);
+    await putFellowshipPhase(phase);
+    setChronicle(nextChronicle);
+    setFellowshipPhases((p) => [...p, phase]);
+    setActiveFellowshipPhaseId(phase.id);
+  }
+
+  async function handleFellowshipApply(params: {
+    chronicle: Chronicle;
+    phase: FellowshipPhase;
+    logEntries: LogEntry[];
+  }) {
+    await putChronicle(params.chronicle);
+    await putFellowshipPhase(params.phase);
+    for (const entry of params.logEntries) {
+      await appendLogEntry(entry);
+    }
+    setChronicle(params.chronicle);
+    setFellowshipPhases((p) => p.map((existing) => (existing.id === params.phase.id ? params.phase : existing)));
+    if (params.logEntries.length > 0) {
+      setLog((l) => [...l, ...params.logEntries]);
+    }
+  }
+
   async function handleExport() {
     const envelope = await exportState();
     const blob = new Blob([serializeState(envelope)], { type: 'application/json' });
@@ -273,6 +321,10 @@ export default function App() {
   const activeJourney = journeys.find((j) => j.id === activeJourneyId) ?? null;
   const activeJourneyTemplate = activeJourney
     ? (stepTemplates.find((t) => t.id === activeJourney.stepTemplateId) ?? null)
+    : null;
+  const activeFellowshipPhase = fellowshipPhases.find((p) => p.id === activeFellowshipPhaseId) ?? null;
+  const activeFellowshipTemplate = activeFellowshipPhase
+    ? (stepTemplates.find((t) => t.id === activeFellowshipPhase.stepTemplateId) ?? null)
     : null;
 
   return (
@@ -330,6 +382,23 @@ export default function App() {
           stepTemplates={stepTemplates}
           routes={routes}
           onBegin={handleBeginJourney}
+        />
+      )}
+
+      {activeFellowshipPhase && activeFellowshipTemplate ? (
+        <FellowshipRunner
+          chronicle={chronicle}
+          phase={activeFellowshipPhase}
+          template={activeFellowshipTemplate}
+          oracleTables={oracleTables}
+          onApply={handleFellowshipApply}
+          onDismiss={() => setActiveFellowshipPhaseId(null)}
+        />
+      ) : (
+        <FellowshipPlanner
+          companySize={chronicle.company.length}
+          stepTemplates={stepTemplates}
+          onBegin={handleBeginFellowshipPhase}
         />
       )}
 

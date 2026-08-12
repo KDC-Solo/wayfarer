@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createChronicle } from './chronicle.ts';
+import { createFellowshipPhase } from './fellowshipPhase.ts';
 import { createJourney, saveAsRoute } from './journey.ts';
 import { createLogEntry } from './log.ts';
 import { createOracleTable } from './oracleTable.ts';
@@ -10,6 +11,7 @@ import {
   deleteOracleTable,
   deleteRoute,
   deleteStepTemplate,
+  getAllFellowshipPhases,
   getAllJourneys,
   getAllLogEntries,
   getAllOracleTables,
@@ -17,6 +19,7 @@ import {
   getAllStepTemplates,
   getChronicle,
   putChronicle,
+  putFellowshipPhase,
   putJourney,
   putOracleTable,
   putRoute,
@@ -131,5 +134,18 @@ describe('route persistence', () => {
     expect(await getAllRoutes()).toEqual([route]);
     await deleteRoute(route.id);
     expect(await getAllRoutes()).toEqual([]);
+  });
+});
+
+describe('fellowship phase persistence', () => {
+  it('round-trips through put/getAll', async () => {
+    const phase = createFellowshipPhase({
+      year: 2954,
+      location: 'Bree',
+      stepTemplateId: 'template-1',
+      heroIds: ['h1'],
+    });
+    await putFellowshipPhase(phase);
+    expect(await getAllFellowshipPhases()).toEqual([phase]);
   });
 });

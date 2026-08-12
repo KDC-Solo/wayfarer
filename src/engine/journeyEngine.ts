@@ -1,9 +1,10 @@
-// The step template interpreter (F3.6). Walks a StepTemplate for the
-// journey's current leg, auto-resolving conditional-branch steps (they
-// need no player input) and stopping at the next step that does.
+// The journey-specific wrapper around the generic step interpreter
+// (stepRunner.ts) — see that module for the shared algorithm (F3.6, reused
+// per F4.6 by fellowshipPhase.ts).
 
 import type { FavourMode } from './dice.ts';
 import type { Journey, Waypoint } from './journey.ts';
+import { currentStep as genericCurrentStep, completeStep as genericCompleteStep } from './stepRunner.ts';
 import type { JourneyRole, StepTemplate, StepTemplateStep } from './stepTemplate.ts';
 import type { Chronicle } from './types.ts';
 
@@ -15,32 +16,13 @@ export interface CurrentStepResult {
 }
 
 export function currentStep(journey: Journey, template: StepTemplate): CurrentStepResult {
-  let index = journey.currentStepIndex;
-  while (index < template.steps.length) {
-    const step = template.steps[index];
-    if (!step.enabled) {
-      index++;
-      continue;
-    }
-    if (step.type === 'conditional-branch') {
-      const matches =
-        (step.when === 'previous-roll-failed' && journey.lastOutcome === 'failure') ||
-        (step.when === 'previous-roll-succeeded' && journey.lastOutcome === 'success');
-      index += 1 + (matches ? step.skipCount : 0);
-      continue;
-    }
-    return { journey: { ...journey, currentStepIndex: index }, step };
-  }
-  return { journey: { ...journey, currentStepIndex: index }, step: null };
+  const { position, step } = genericCurrentStep(journey, template);
+  return { journey: position, step };
 }
 
 /** Call once the UI has resolved and logged the current interactive step. */
 export function completeStep(journey: Journey, outcome?: 'success' | 'failure'): Journey {
-  return {
-    ...journey,
-    currentStepIndex: journey.currentStepIndex + 1,
-    lastOutcome: outcome ?? journey.lastOutcome,
-  };
+  return genericCompleteStep(journey, outcome);
 }
 
 /** Call when currentStep() returns a null step — advances to the next

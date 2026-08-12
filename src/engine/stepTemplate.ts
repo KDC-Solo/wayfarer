@@ -37,6 +37,10 @@ export interface ResourceChangeStep extends BaseStep {
   field: ResourceField;
   amount: number;
   scope: ResourceChangeScope;
+  /** 'delta' (default, backward compatible) adds `amount`; 'set' assigns it
+   * directly — needed for things like a Fellowship-phase Fatigue reset,
+   * which is "set to 0," not a relative change. */
+  mode?: 'delta' | 'set';
 }
 
 export interface PromptStep extends BaseStep {
