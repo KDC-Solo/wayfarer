@@ -1,11 +1,13 @@
 # Product Requirements Document
 ## Strider Mode Companion — a solo play assistant for The One Ring 2e
 
-**Version:** 1.0 (development baseline)
+**Version:** 1.1 (development baseline)
 **Status:** Approved for development
 **Last updated:** 12 August 2026
 
 **Changes since 0.2:** dice input modes added to Phase 1; optional 3D physics dice roller added as Phase 7; technical approach and development sequence sections added. **Requirement IDs have been renumbered and are now frozen** — this version is the reference baseline. Subsequent additions append; they do not renumber.
+
+**Changes since 1.0:** F1.5 and F1.6 clarified with the concrete Target Number formulas (solo vs. standard); F2.3 clarified with the Telling Table's actual chance-band mechanism. Resolved against the primary source now that it's available for reference; no IDs added or renumbered, no table result content reproduced (still C1/C2-clean).
 
 ---
 
@@ -113,9 +115,9 @@ Each phase must be independently shippable and useful on its own.
 
 **F1.4** Present a company overview showing every hero's Endurance, Hope, Fatigue, Shadow, and derived states on a single screen, without scrolling at four heroes.
 
-**F1.5** Apply the Strider Mode solo balancing adjustments only when the company contains exactly one hero. The switch is visible and manually overridable.
+**F1.5** Apply the Strider Mode solo balancing adjustments only when the company contains exactly one hero. The switch is visible and manually overridable. The primary adjustment in scope for Phase 1 is the Target Number formula (see F1.6) — additional solo-only adjustments (e.g. previous-experience points, Fellowship score) belong to character creation and Fellowship phase and are out of scope until Phases 1/4 respectively touch them.
 
-**F1.6** Resolve a skill roll: one Feat die (d12) plus N Success dice (d6) where N is the skill rank, summed against a Target Number derived from the relevant attribute.
+**F1.6** Resolve a skill roll: one Feat die (d12) plus N Success dice (d6) where N is the skill rank, summed against a Target Number (TN) derived from the relevant attribute. TN = 20 − Attribute in standard company play; when F1.5's solo adjustment is active (company of one), TN = 18 − Attribute instead, making the lone Player-hero more capable to offset the lack of a Company. The engine must support both formulas, selected by the F1.5 switch, not a single hard-coded constant.
 
 **F1.7** Handle Feat die special faces: the rune face resolves as an automatic success regardless of total; the Eye face counts as zero and is flagged in the log for narrative consequence.
 
@@ -148,7 +150,7 @@ Each phase must be independently shippable and useful on its own.
 
 **F2.2** Attach a free-text interpretation to any oracle result, stored with the log entry.
 
-**F2.3** Support likelihood weighting where the user judges an outcome more or less probable.
+**F2.3** Support likelihood weighting where the user judges an outcome more or less probable, via named chance bands (e.g. certain, likely, middling, doubtful, unthinkable) that each map to a roll-under-or-equal threshold on the same Feat die used for skill rolls, defaulting to the middle band. This reuses F1.7's rune/Eye special-face handling: the rune face is always a yes-with-a-twist and the Eye face is always a no-with-a-twist, regardless of the chosen band. This is a single-roll banded mechanism, not a Mythic-GME-style Chaos Factor that drifts across scenes — no chaos/tension counter is in scope.
 
 **F2.4** Roll on any arbitrary user-defined table by name, with results logged identically.
 
@@ -368,3 +370,5 @@ No accounts and no telemetry, so measurement is indirect and qualitative:
 | D5 | Three dice input modes | Physical dice are a large part of why players bought the game |
 | D6 | 3D dice as optional lazy-loaded module | Polish; must never be a dependency of core function |
 | D7 | Log as append-only spine | Undo, audit, and chronicle all derive from one mechanism |
+| D8 | Solo TN formula is 18 − Attribute, standard is 20 − Attribute, selected by company size | Confirmed against the Strider Mode source; was previously an unspecified "adjustment" in F1.5 |
+| D9 | Oracle likelihood weighting (F2.3) is a single-roll five-band threshold on the Feat die, not a Mythic-style drifting Chaos Factor | Matches Strider Mode's actual Telling Table mechanic; avoids importing unrelated system complexity |
