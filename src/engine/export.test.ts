@@ -1,7 +1,16 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createChronicle } from './chronicle.ts';
 import { createLogEntry } from './log.ts';
-import { appendLogEntry, clearAll, getAllLogEntries, getChronicle, putChronicle } from './persistence.ts';
+import { createOracleTable } from './oracleTable.ts';
+import {
+  appendLogEntry,
+  clearAll,
+  getAllLogEntries,
+  getAllOracleTables,
+  getChronicle,
+  putChronicle,
+  putOracleTable,
+} from './persistence.ts';
 import { exportState, importState, ImportError, parseStateEnvelope, serializeState } from './export.ts';
 
 beforeEach(async () => {
@@ -13,16 +22,19 @@ describe('exportState', () => {
     await expect(exportState()).rejects.toThrow('No chronicle to export');
   });
 
-  it('bundles the current chronicle and log', async () => {
+  it('bundles the current chronicle, log, and oracle tables', async () => {
     const chronicle = createChronicle();
     await putChronicle(chronicle);
     const entry = createLogEntry({ type: 'system' });
     await appendLogEntry(entry);
+    const table = createOracleTable({ name: 'Lore Table', rollExpression: '1d12' });
+    await putOracleTable(table);
 
     const envelope = await exportState();
     expect(envelope.format).toBe('wayfarer-export');
     expect(envelope.chronicle).toEqual(chronicle);
     expect(envelope.log).toEqual([entry]);
+    expect(envelope.oracleTables).toEqual([table]);
   });
 });
 
@@ -42,7 +54,7 @@ describe('parseStateEnvelope', () => {
 });
 
 describe('export/import round trip', () => {
-  it('restores an identical chronicle and log after export → import', async () => {
+  it('restores an identical chronicle, log, and oracle tables after export → import', async () => {
     const chronicle = { ...createChronicle(), currentYear: 2953, currentLocation: 'Bree' };
     await putChronicle(chronicle);
     const entries = [
@@ -50,6 +62,8 @@ describe('export/import round trip', () => {
       createLogEntry({ type: 'prose', prose: 'The road goes ever on.' }),
     ];
     for (const e of entries) await appendLogEntry(e);
+    const table = createOracleTable({ name: 'Lore Table', rollExpression: '1d12' });
+    await putOracleTable(table);
 
     const json = serializeState(await exportState());
 
@@ -61,6 +75,7 @@ describe('export/import round trip', () => {
     expect(await getChronicle()).toEqual(chronicle);
     const restoredLog = await getAllLogEntries();
     expect(restoredLog.map((e) => e.id).sort()).toEqual(entries.map((e) => e.id).sort());
+    expect(await getAllOracleTables()).toEqual([table]);
   });
 
   it('replaces existing state rather than merging with it', async () => {

@@ -2,8 +2,16 @@ import { describe, expect, it } from 'vitest';
 import { createChronicle } from './chronicle.ts';
 import { createHero } from './hero.ts';
 import { addHero } from './company.ts';
-import { changeResource, recordSkillRoll, undoResourceChange } from './actions.ts';
+import {
+  changeResource,
+  recordOracleAnswer,
+  recordSkillRoll,
+  recordTableRoll,
+  undoResourceChange,
+} from './actions.ts';
 import { resolveSkillRoll } from './dice.ts';
+import { resolveTellingTable } from './tellingTable.ts';
+import { addRow, createOracleTable, rollOnTable } from './oracleTable.ts';
 
 function setup() {
   let chronicle = createChronicle();
@@ -89,5 +97,33 @@ describe('recordSkillRoll', () => {
     expect(entry.inputMode).toBe('hybrid');
     expect(entry.payload.skillName).toBe('Awareness');
     expect(entry.payload.success).toBe(true);
+  });
+});
+
+describe('recordOracleAnswer', () => {
+  it('logs the Telling Table result with an attached free-text interpretation (F2.1/F2.2)', () => {
+    const result = resolveTellingTable('Is there a bridge?', 'likely', 7);
+    const entry = recordOracleAnswer(result, 'app-rolls', 'A rope bridge, half-rotted.');
+    expect(entry.type).toBe('oracle');
+    expect(entry.prose).toBe('A rope bridge, half-rotted.');
+    expect(entry.payload).toMatchObject({ answer: 'yes', chance: 'likely' });
+  });
+
+  it('prose defaults to null when no interpretation is given', () => {
+    const result = resolveTellingTable('q', 'middling', 3);
+    const entry = recordOracleAnswer(result, 'app-rolls');
+    expect(entry.prose).toBeNull();
+  });
+});
+
+describe('recordTableRoll', () => {
+  it('logs identically to any other roll, regardless of table (F2.4)', () => {
+    let table = createOracleTable({ name: 'Lore Table', rollExpression: '1d6' });
+    table = addRow(table, { min: 1, max: 6, text: 'A distant howl' });
+    const { row } = rollOnTable(table, 4);
+    const entry = recordTableRoll(table.id, table.name, 4, row, 'app-rolls', 'Wargs, probably.');
+    expect(entry.type).toBe('oracle');
+    expect(entry.payload).toMatchObject({ tableId: table.id, tableName: 'Lore Table', key: 4 });
+    expect(entry.prose).toBe('Wargs, probably.');
   });
 });

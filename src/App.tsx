@@ -1,20 +1,41 @@
 import { useEffect, useRef, useState } from 'react';
 import { addHero, getActiveHero, removeHero, setActiveHero } from './engine/company.ts';
 import { createChronicle, setDiceInputMode } from './engine/chronicle.ts';
-import { changeResource, recordSkillRoll, undoResourceChange } from './engine/actions.ts';
+import {
+  changeResource,
+  recordOracleAnswer,
+  recordSkillRoll,
+  recordTableRoll,
+  undoResourceChange,
+} from './engine/actions.ts';
 import { createLogEntry } from './engine/log.ts';
-import { appendLogEntry, getAllLogEntries, getChronicle, putChronicle } from './engine/persistence.ts';
+import {
+  appendLogEntry,
+  deleteOracleTable,
+  getAllLogEntries,
+  getAllOracleTables,
+  getChronicle,
+  putChronicle,
+  putOracleTable,
+} from './engine/persistence.ts';
 import { exportState, importState, serializeState } from './engine/export.ts';
 import type { SkillRollResult } from './engine/dice.ts';
+import type { TellingTableResult } from './engine/tellingTable.ts';
+import type { OracleTable } from './engine/oracleTable.ts';
 import type { ResourceField } from './engine/resources.ts';
 import type { Chronicle, DiceInputMode, Hero, LogEntry } from './engine/types.ts';
+import { defaultOracleTables } from './data/oracleTables.ts';
 import { CompanyOverview } from './ui/CompanyOverview.tsx';
 import { HeroForm } from './ui/HeroForm.tsx';
 import { RollPanel } from './ui/RollPanel.tsx';
+import { OraclePanel } from './ui/OraclePanel.tsx';
+import { TableRoller } from './ui/TableRoller.tsx';
+import { TableEditor } from './ui/TableEditor.tsx';
 
 export default function App() {
   const [chronicle, setChronicle] = useState<Chronicle | null>(null);
   const [log, setLog] = useState<LogEntry[]>([]);
+  const [oracleTables, setOracleTables] = useState<OracleTable[]>([]);
   const [status, setStatus] = useState<string | null>(null);
   const [showHeroForm, setShowHeroForm] = useState(false);
   const [lastResourceChange, setLastResourceChange] = useState<LogEntry | null>(null);
@@ -29,6 +50,13 @@ export default function App() {
     }
     setChronicle(c);
     setLog(await getAllLogEntries());
+
+    let tables = await getAllOracleTables();
+    if (tables.length === 0) {
+      tables = defaultOracleTables();
+      for (const t of tables) await putOracleTable(t);
+    }
+    setOracleTables(tables);
   }
 
   useEffect(() => {
@@ -110,6 +138,46 @@ export default function App() {
     await persist(chronicle, entry);
   }
 
+  async function handleOracleLog(result: TellingTableResult, prose: string) {
+    if (!chronicle) return;
+    const entry = recordOracleAnswer(result, chronicle.diceInputMode, prose || undefined);
+    await persist(chronicle, entry);
+  }
+
+  async function handleTableRollLog(params: {
+    tableId: string;
+    tableName: string;
+    key: number | 'eye' | 'rune';
+    text: string;
+    prose: string;
+  }) {
+    if (!chronicle) return;
+    const entry = recordTableRoll(
+      params.tableId,
+      params.tableName,
+      params.key,
+      { text: params.text },
+      chronicle.diceInputMode,
+      params.prose || undefined,
+    );
+    await persist(chronicle, entry);
+  }
+
+  async function handleCreateTable(table: OracleTable) {
+    await putOracleTable(table);
+    setOracleTables((t) => [...t, table]);
+  }
+
+  async function handleUpdateTable(table: OracleTable) {
+    await putOracleTable(table);
+    setOracleTables((t) => t.map((existing) => (existing.id === table.id ? table : existing)));
+  }
+
+  async function handleDeleteTable(id: string) {
+    await deleteOracleTable(id);
+    setOracleTables((t) => t.filter((table) => table.id !== id));
+  }
+
   async function handleExport() {
     const envelope = await exportState();
     const blob = new Blob([serializeState(envelope)], { type: 'application/json' });
@@ -161,6 +229,17 @@ export default function App() {
           onResolved={handleRollResolved}
         />
       )}
+
+      <OraclePanel diceInputMode={chronicle.diceInputMode} onLog={handleOracleLog} />
+
+      <TableRoller tables={oracleTables} onLog={handleTableRollLog} />
+
+      <TableEditor
+        tables={oracleTables}
+        onCreate={handleCreateTable}
+        onUpdate={handleUpdateTable}
+        onDelete={handleDeleteTable}
+      />
 
       <footer>
         <button onClick={handleExport}>Export state</button>{' '}

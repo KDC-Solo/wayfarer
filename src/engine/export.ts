@@ -1,16 +1,19 @@
 import { SCHEMA_VERSION, type Chronicle, type LogEntry } from './types.ts';
+import type { OracleTable } from './oracleTable.ts';
 import {
   appendLogEntry,
   clearAll,
   getAllLogEntries,
+  getAllOracleTables,
   getChronicle,
   putChronicle,
+  putOracleTable,
 } from './persistence.ts';
 
 /**
  * Full application state as a single portable JSON document (F6.4, N5).
- * Tables, step templates, and dice packs aren't modeled yet (Phases 2/3/7)
- * — the envelope shape reserves room for them so the format doesn't need a
+ * Step templates and dice packs aren't modeled yet (Phases 3/7) — the
+ * envelope shape reserves room for them so the format doesn't need a
  * breaking change when they land.
  */
 export interface StateEnvelope {
@@ -19,6 +22,7 @@ export interface StateEnvelope {
   exportedAt: string;
   chronicle: Chronicle;
   log: LogEntry[];
+  oracleTables: OracleTable[];
 }
 
 export class ImportError extends Error {}
@@ -27,12 +31,14 @@ export async function exportState(): Promise<StateEnvelope> {
   const chronicle = await getChronicle();
   if (!chronicle) throw new Error('No chronicle to export — nothing has been created yet.');
   const log = await getAllLogEntries();
+  const oracleTables = await getAllOracleTables();
   return {
     format: 'wayfarer-export',
     schemaVersion: SCHEMA_VERSION,
     exportedAt: new Date().toISOString(),
     chronicle,
     log,
+    oracleTables,
   };
 }
 
@@ -66,12 +72,15 @@ export function parseStateEnvelope(json: string): StateEnvelope {
   return envelope;
 }
 
-/** Replaces local state with the imported envelope's chronicle and log. */
+/** Replaces local state with the imported envelope's chronicle, log, and oracle tables. */
 export async function importState(json: string): Promise<void> {
   const envelope = parseStateEnvelope(json);
   await clearAll();
   await putChronicle(envelope.chronicle);
   for (const entry of envelope.log) {
     await appendLogEntry(entry);
+  }
+  for (const table of envelope.oracleTables ?? []) {
+    await putOracleTable(table);
   }
 }

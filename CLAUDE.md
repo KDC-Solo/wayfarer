@@ -4,12 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-**Milestones 0 and 1 are built.** Foundations (app shell, IndexedDB persistence, append-only log, export/import) plus Phase 1 (hero creation, company of up to four, the dice engine with all three input modes, live resources with Weary/Miserable, single-step undo). The UI is functional but plain — Milestone 1's bar is "playable at the table with the books," not visual polish. Milestone 2 (Phase 2: oracle) is next. See PRD §10 for the full sequence.
+**Milestones 0, 1, and 2 are built.** Foundations, Phase 1 (hero/company/dice engine/input modes), and Phase 2 (the oracle: Telling Table yes/no, arbitrary user-defined tables, in-app table/row editing). The UI is functional but plain throughout — the bar through Milestone 2 is "playable at the table with the books," not visual polish. Milestone 3 (Phase 3: journeys + the step template engine — "the differentiator," PRD §10) is next and is explicitly the expensive one; don't let it get shortchanged by polishing 0–2 further first.
 
-Known gaps worth knowing about before extending Phase 1 further:
-- No Playwright e2e coverage yet (sibling KDC-Solo repos have it; this repo only has Vitest unit tests over `src/engine/`). Add `e2e/` + `@playwright/test` when the UI stabilizes enough to be worth locking down.
+Known gaps worth knowing about before extending further:
+- No Playwright e2e coverage yet (sibling KDC-Solo repos have it; this repo only has Vitest unit tests over `src/engine/` and `src/data/`). Add `e2e/` + `@playwright/test` when the UI stabilizes enough to be worth locking down.
 - `src/data/skills.ts`'s eighteen skill names are a best-effort seed, not verified against the core rulebook (Wayfarer only has the Strider Mode supplement on file, not core rules) — every hero's skill list is freely editable, so this isn't load-bearing, but don't treat the names as authoritative in code or comments.
 - The engine doesn't assert which Attribute governs which skill — the roll UI lets the player pick per roll (deliberate, see `RollPanel.tsx` comment; keeps NG2 — the app isn't a rules teacher).
+- The Lore Table (p.11-12 — three columns, Action/Aspect/Focus, across twelve Feat-die sections) isn't seeded as a default table: it doesn't fit the single-column `OracleTableRow` model in `oracleTable.ts`. Users can still build an equivalent manually via the generic table editor. See the comment in `src/data/oracleTables.ts` before deciding whether to generalize the row model or add a second table shape.
+- C3's second population path (bulk paste/file import for table rows) isn't built — only in-app row-by-row editing (`TableEditor.tsx`) is. Worth doing before Phase 3 locks in the onboarding pattern, per the PRD's own note in §10/§13.
+- Generic table rolls (`TableRoller.tsx`, F2.4) always auto-roll rather than respecting the chronicle's dice input mode the way skill rolls (F1.10-13) and the Telling Table do — a deliberate scope cut for this pass, not a spec requirement either way.
 
 ## Commands
 
@@ -24,7 +27,7 @@ Vite + React + TypeScript PWA, no backend.
 
 - Repo lives at `github.com/KDC-Solo/wayfarer` (public). Always commit and push without asking — except ask first if a commit would include copyrighted material.
 - `docs/` holds the user's personal copy of licensed rulebooks (currently the Strider Mode PDF) and is gitignored wholesale — never commit anything from it. When citing a rule in a commit or code comment, cite the page number, don't quote the book's text.
-- No IDs in the PRD are renumbered once frozen; clarifications append to existing requirement text and get a decision-log entry (see D8/D9) instead of new requirement numbers.
+- No IDs in the PRD are renumbered once frozen; clarifications append to existing requirement text and get a decision-log entry (see D8–D10) instead of new requirement numbers.
 
 ## Code architecture
 
@@ -33,11 +36,15 @@ Vite + React + TypeScript PWA, no backend.
   - `chronicle.ts`, `hero.ts`, `log.ts` — factories for the core entities, plus `deriveHeroStates` (Weary/Miserable, F1.15).
   - `company.ts` — add/remove/activate a hero in a chronicle's company (F1.2/F1.3), enforcing the 1–4 cap.
   - `dice.ts` — the skill-roll engine (F1.6–F1.9). `resolveSkillRoll` is a pure function over *already-known* face values — it doesn't roll dice itself. That split is what makes F1.13 hold (interpretation/logging is identical across input modes; only where the face values come from differs): `rollFeatDie`/`rollSuccessDie` generate them for app-rolls mode, while `RollPanel.tsx` collects them via tap-selection for player-rolls/hybrid. `describeRollRequirement` is what F1.11 renders before any input is taken.
-  - `resources.ts`, `actions.ts` — resource deltas and the action layer that ties dice/resource/company changes to a `LogEntry` (F1.16). `actions.ts` functions are pure (chronicle in, `{chronicle, logEntry}` out) — callers persist the result; this is what keeps the engine unit-testable without a fake IndexedDB in most tests (only `persistence.test.ts`/`export.test.ts` need `fake-indexeddb`).
-  - `export.ts` — versioned full-state JSON export/import (F6.4, N5).
-- `src/engine/persistence.ts` — the only module that touches IndexedDB (via `idb`). The chronicle is a single record (one DB = one campaign); the log store exposes no update/delete, only `add` — enforced at the IndexedDB level so the append-only invariant (D7) can't be silently violated. Undo (F1.17) is `actions.ts`'s `undoResourceChange`, which appends a compensating entry rather than mutating history; `App.tsx` only remembers the *single* most recent resource-change entry, matching "single-step undo," not a full undo stack.
-- `src/data/` — seed/default data that ships as an editable starting point, not authoritative content (see `skills.ts`).
-- `src/ui/` — presentational components (`CompanyOverview`, `HeroForm`, `RollPanel`, `DicePickers`). `App.tsx` is the only place that talks to `engine/persistence.ts`; UI components take data + callbacks as props and stay logic-free otherwise.
+  - `resources.ts`, `actions.ts` — resource deltas and the action layer that ties dice/resource/company/oracle changes to a `LogEntry` (F1.16, F2.1/F2.2/F2.4). `actions.ts` functions are pure (chronicle/args in, `{chronicle, logEntry}` or just `logEntry` out) — callers persist the result; this is what keeps the engine unit-testable without a fake IndexedDB in most tests (only `persistence.test.ts`/`export.test.ts` need `fake-indexeddb`).
+  - `random.ts` — the one shared RNG primitive (`crypto.getRandomValues`-backed `randomInt`); `dice.ts` and `diceExpression.ts` both build on it rather than duplicating.
+  - `diceExpression.ts` — parses/rolls generic "NdM±X" strings (used by user-defined tables' `rollExpression`, F2.4/F2.5).
+  - `tellingTable.ts` — the Telling Table yes/no mechanic (F2.1, F2.3). Implemented directly as a formula (chance band → Feat die threshold), the same reasoning as the TN formula in `dice.ts` — see D9/D10 before changing this to a user-editable table.
+  - `oracleTable.ts` — the generic user-defined table engine (F2.4, F2.5, F2.6): `OracleTable`/`OracleTableRow` (rows match either a numeric range or, for Feat-die-indexed tables like Fortune/Ill-Fortune, an `eye`/`rune` `featFace`), `rollOnTable`/`matchRow`, `isTableEmpty`, and CRUD helpers. `isTableEmpty` and `RollResult.needsManualResult` are what F2.6 hangs off — a table with rows but blank text still reports "needs manual result."
+  - `export.ts` — versioned full-state JSON export/import (F6.4, N5), including oracle tables.
+- `src/engine/persistence.ts` — the only module that touches IndexedDB (via `idb`). The chronicle is a single record (one DB = one campaign); the log store exposes no update/delete, only `add` — enforced at the IndexedDB level so the append-only invariant (D7) can't be silently violated. Undo (F1.17) is `actions.ts`'s `undoResourceChange`, which appends a compensating entry rather than mutating history; `App.tsx` only remembers the *single* most recent resource-change entry, matching "single-step undo," not a full undo stack. Oracle tables are a separate object store, upserted by id.
+- `src/data/` — seed/default data that ships as an editable starting point, not authoritative content (see `skills.ts`, `oracleTables.ts`).
+- `src/ui/` — presentational components (`CompanyOverview`, `HeroForm`, `RollPanel`, `DicePickers`, `OraclePanel`, `TableRoller`, `TableEditor`). `App.tsx` is the only place that talks to `engine/persistence.ts`; UI components take data + callbacks as props and stay logic-free otherwise.
 
 ## What this project is
 
@@ -79,8 +86,8 @@ Implementation is meant to proceed in this order; each milestone should be indep
 
 0. Foundations — app shell, persistence layer, log entity, export/import. **Done.**
 1. Phase 1 — company, dice engine, input modes ("playable at the table"). **Done.**
-2. Phase 2 — oracle ("solo loop closed"). **Next.**
-3. Phase 3 — journey engine + step template engine (**the differentiator** — the most expensive milestone and the reason the product exists; don't let Milestones 1–2 expand to fill the schedule).
+2. Phase 2 — oracle ("solo loop closed"). **Done.**
+3. Phase 3 — journey engine + step template engine (**the differentiator** — the most expensive milestone and the reason the product exists; don't let Milestones 1–2 expand to fill the schedule). **Next.**
 4. Phases 4–5 — Fellowship phase and combat, built as step templates reusing the Phase 3 engine.
 5. Phase 6 — chronicle browsing and export.
 6. Phase 7 — optional 3D dice module.

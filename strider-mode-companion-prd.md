@@ -1,13 +1,15 @@
 # Product Requirements Document
 ## Strider Mode Companion — a solo play assistant for The One Ring 2e
 
-**Version:** 1.1 (development baseline)
+**Version:** 1.2 (development baseline)
 **Status:** Approved for development
 **Last updated:** 12 August 2026
 
 **Changes since 0.2:** dice input modes added to Phase 1; optional 3D physics dice roller added as Phase 7; technical approach and development sequence sections added. **Requirement IDs have been renumbered and are now frozen** — this version is the reference baseline. Subsequent additions append; they do not renumber.
 
 **Changes since 1.0:** F1.5 and F1.6 clarified with the concrete Target Number formulas (solo vs. standard); F2.3 clarified with the Telling Table's actual chance-band mechanism. Resolved against the primary source now that it's available for reference; no IDs added or renumbered, no table result content reproduced (still C1/C2-clean).
+
+**Changes since 1.1:** F2.1 corrected to match F2.3/the primary source — the Telling Table is a binary yes/no with an extremity flag on rune/Eye, not the six-tier yes-and/yes-but/no-but/no-and scale it previously described (that wording predated checking the book, same root cause as the F2.3 fix).
 
 ---
 
@@ -146,7 +148,7 @@ Each phase must be independently shippable and useful on its own.
 
 ### Phase 2 — Oracle
 
-**F2.1** Ask a yes/no question and receive a Telling Table result with its modifier attached (yes-and, yes, yes-but, no-but, no, no-and), drawn from user-loaded content.
+**F2.1** Ask a yes/no question and receive a Telling Table result: yes or no, per the chance band's threshold (F2.3), with an "extreme result or twist" flag on the rune/Eye faces for the player to elaborate on (optionally using the Lore Table or F2.4's arbitrary tables). Not a six-tier yes-and/yes-but/no-but/no-and scale — the source table is a binary answer plus a single extremity flag.
 
 **F2.2** Attach a free-text interpretation to any oracle result, stored with the log entry.
 
@@ -372,3 +374,4 @@ No accounts and no telemetry, so measurement is indirect and qualitative:
 | D7 | Log as append-only spine | Undo, audit, and chronicle all derive from one mechanism |
 | D8 | Solo TN formula is 18 − Attribute, standard is 20 − Attribute, selected by company size | Confirmed against the Strider Mode source; was previously an unspecified "adjustment" in F1.5 |
 | D9 | Oracle likelihood weighting (F2.3) is a single-roll five-band threshold on the Feat die, not a Mythic-style drifting Chaos Factor | Matches Strider Mode's actual Telling Table mechanic; avoids importing unrelated system complexity |
+| D10 | Telling Table answer is binary yes/no with an extremity flag (F2.1), not a six-tier yes-and/yes-but/no-but/no-and scale | F2.1's original wording predated checking the book and didn't match the actual table (page 10); corrected to be consistent with D9/F2.3 |

@@ -6,6 +6,8 @@ import { replaceHero } from './company.ts';
 import { createLogEntry } from './log.ts';
 import { applyResourceDelta, setResourceValue, type ResourceField } from './resources.ts';
 import type { SkillRollResult } from './dice.ts';
+import type { TellingTableResult } from './tellingTable.ts';
+import type { OracleTableRow } from './oracleTable.ts';
 import type { Chronicle, DiceInputMode, LogEntry } from './types.ts';
 
 export interface ActionResult {
@@ -70,5 +72,38 @@ export function recordSkillRoll(
     heroId,
     inputMode,
     payload: { skillName, ...result },
+  });
+}
+
+/** F2.1/F2.2 — the Telling Table answer, with an optional free-text
+ * interpretation stored on the same entry (F2.2 asks for "attached", not a
+ * separate record). */
+export function recordOracleAnswer(
+  result: TellingTableResult,
+  inputMode: DiceInputMode,
+  prose?: string,
+): LogEntry {
+  return createLogEntry({
+    type: 'oracle',
+    inputMode,
+    payload: { ...result },
+    prose: prose ?? null,
+  });
+}
+
+/** F2.4 — logged identically to any other roll, regardless of which table. */
+export function recordTableRoll(
+  tableId: string,
+  tableName: string,
+  key: number | 'eye' | 'rune',
+  row: OracleTableRow | null,
+  inputMode: DiceInputMode,
+  prose?: string,
+): LogEntry {
+  return createLogEntry({
+    type: 'oracle',
+    inputMode,
+    payload: { tableId, tableName, key, row },
+    prose: prose ?? null,
   });
 }

@@ -93,6 +93,6 @@ export interface LogEntry {
   sessionId: string | null;
 }
 
-// Bumped for the Phase 1 data model (full Hero, Chronicle.activeHeroId).
-// No migration path from schema 1 — nothing shipped against it yet.
-export const SCHEMA_VERSION = 2;
+// Bumped for the Phase 2 data model (oracle tables). No migration path from
+// earlier schema versions — nothing shipped against them yet.
+export const SCHEMA_VERSION = 3;

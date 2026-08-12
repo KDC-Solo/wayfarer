@@ -5,6 +5,8 @@
 // degrees of success, and logging behave identically regardless of input
 // mode, which only changes where the numbers come from.
 
+import { randomInt } from './random.ts';
+
 export type FeatDieFace = number | 'eye' | 'rune'; // number is 1-10
 export type SuccessDieFace = 1 | 2 | 3 | 4 | 5 | 6;
 export type FavourMode = 'normal' | 'favoured' | 'ill-favoured';
@@ -133,12 +135,6 @@ export function describeRollRequirement(params: {
     favourMode: params.favourMode,
     weary: params.weary,
   };
-}
-
-function randomInt(exclusiveMax: number): number {
-  const arr = new Uint32Array(1);
-  crypto.getRandomValues(arr);
-  return arr[0] % exclusiveMax;
 }
 
 /** app-rolls mode only — player-rolls/hybrid get face values from the UI. */
