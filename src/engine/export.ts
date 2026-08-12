@@ -1,20 +1,27 @@
 import { SCHEMA_VERSION, type Chronicle, type LogEntry } from './types.ts';
 import type { OracleTable } from './oracleTable.ts';
+import type { StepTemplate } from './stepTemplate.ts';
+import type { Journey, Route } from './journey.ts';
 import {
   appendLogEntry,
   clearAll,
+  getAllJourneys,
   getAllLogEntries,
   getAllOracleTables,
+  getAllRoutes,
+  getAllStepTemplates,
   getChronicle,
   putChronicle,
+  putJourney,
   putOracleTable,
+  putRoute,
+  putStepTemplate,
 } from './persistence.ts';
 
 /**
  * Full application state as a single portable JSON document (F6.4, N5).
- * Step templates and dice packs aren't modeled yet (Phases 3/7) — the
- * envelope shape reserves room for them so the format doesn't need a
- * breaking change when they land.
+ * Dice packs aren't modeled yet (Phase 7) — the envelope shape reserves
+ * room for them so the format doesn't need a breaking change when they land.
  */
 export interface StateEnvelope {
   format: 'wayfarer-export';
@@ -23,6 +30,9 @@ export interface StateEnvelope {
   chronicle: Chronicle;
   log: LogEntry[];
   oracleTables: OracleTable[];
+  stepTemplates: StepTemplate[];
+  journeys: Journey[];
+  routes: Route[];
 }
 
 export class ImportError extends Error {}
@@ -30,8 +40,13 @@ export class ImportError extends Error {}
 export async function exportState(): Promise<StateEnvelope> {
   const chronicle = await getChronicle();
   if (!chronicle) throw new Error('No chronicle to export — nothing has been created yet.');
-  const log = await getAllLogEntries();
-  const oracleTables = await getAllOracleTables();
+  const [log, oracleTables, stepTemplates, journeys, routes] = await Promise.all([
+    getAllLogEntries(),
+    getAllOracleTables(),
+    getAllStepTemplates(),
+    getAllJourneys(),
+    getAllRoutes(),
+  ]);
   return {
     format: 'wayfarer-export',
     schemaVersion: SCHEMA_VERSION,
@@ -39,6 +54,9 @@ export async function exportState(): Promise<StateEnvelope> {
     chronicle,
     log,
     oracleTables,
+    stepTemplates,
+    journeys,
+    routes,
   };
 }
 
@@ -72,7 +90,7 @@ export function parseStateEnvelope(json: string): StateEnvelope {
   return envelope;
 }
 
-/** Replaces local state with the imported envelope's chronicle, log, and oracle tables. */
+/** Replaces local state wholesale with the imported envelope. */
 export async function importState(json: string): Promise<void> {
   const envelope = parseStateEnvelope(json);
   await clearAll();
@@ -82,5 +100,14 @@ export async function importState(json: string): Promise<void> {
   }
   for (const table of envelope.oracleTables ?? []) {
     await putOracleTable(table);
+  }
+  for (const template of envelope.stepTemplates ?? []) {
+    await putStepTemplate(template);
+  }
+  for (const journey of envelope.journeys ?? []) {
+    await putJourney(journey);
+  }
+  for (const route of envelope.routes ?? []) {
+    await putRoute(route);
   }
 }

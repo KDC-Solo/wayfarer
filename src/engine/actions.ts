@@ -27,6 +27,7 @@ export function changeResource(
   field: ResourceField,
   delta: number,
   inputMode: DiceInputMode,
+  journeyId?: string,
 ): ActionResult {
   const hero = requireHero(chronicle, heroId);
   const from = hero.resources[field];
@@ -37,6 +38,7 @@ export function changeResource(
     heroId,
     inputMode,
     payload: { field, from, to },
+    journeyId: journeyId ?? null,
   });
   return { chronicle: replaceHero(chronicle, updatedHero), logEntry };
 }
@@ -66,12 +68,14 @@ export function recordSkillRoll(
   skillName: string,
   result: SkillRollResult,
   inputMode: DiceInputMode,
+  journeyId?: string,
 ): LogEntry {
   return createLogEntry({
     type: 'roll',
     heroId,
     inputMode,
     payload: { skillName, ...result },
+    journeyId: journeyId ?? null,
   });
 }
 
@@ -82,12 +86,14 @@ export function recordOracleAnswer(
   result: TellingTableResult,
   inputMode: DiceInputMode,
   prose?: string,
+  journeyId?: string,
 ): LogEntry {
   return createLogEntry({
     type: 'oracle',
     inputMode,
     payload: { ...result },
     prose: prose ?? null,
+    journeyId: journeyId ?? null,
   });
 }
 
@@ -99,11 +105,28 @@ export function recordTableRoll(
   row: OracleTableRow | null,
   inputMode: DiceInputMode,
   prose?: string,
+  journeyId?: string,
 ): LogEntry {
   return createLogEntry({
     type: 'oracle',
     inputMode,
     payload: { tableId, tableName, key, row },
     prose: prose ?? null,
+    journeyId: journeyId ?? null,
+  });
+}
+
+/** F3.7 — a journey event that isn't itself a roll or table draw (e.g. a
+ * prompt step's narrative beat). */
+export function recordJourneyEvent(
+  journeyId: string,
+  heroId: string | null,
+  message: string,
+): LogEntry {
+  return createLogEntry({
+    type: 'journey-event',
+    heroId,
+    prose: message,
+    journeyId,
   });
 }

@@ -93,6 +93,7 @@ export interface LogEntry {
   sessionId: string | null;
 }
 
-// Bumped for the Phase 2 data model (oracle tables). No migration path from
-// earlier schema versions — nothing shipped against them yet.
-export const SCHEMA_VERSION = 3;
+// Bumped for the Phase 3 data model (step templates, journeys, routes). No
+// migration path from earlier schema versions — nothing shipped against
+// them yet.
+export const SCHEMA_VERSION = 4;

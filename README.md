@@ -5,13 +5,17 @@ journeys, resource tracking, and a chronicle of the campaign, without any licens
 shipping in the app. See [`strider-mode-companion-prd.md`](strider-mode-companion-prd.md) for
 the full product requirements and design rationale.
 
-**Status: Milestone 2.** Create a company of up to four heroes, roll skills in any of the
-three dice input modes (app rolls / player rolls / hybrid), track live resources with
-Weary/Miserable and single-step undo, ask the Telling Table a yes/no question, and roll on
-(or define your own) oracle tables — with Fortune/Ill-Fortune shipped as empty skeletons for
-you to fill in from your own book. The UI is plain, not polished — the bar through this
-milestone is "playable at the table with the books," not visual design. Milestone 3 (the
-journey engine) is next.
+**Status: Milestone 3.** Create a company of up to four heroes, roll skills in any of the
+three dice input modes, track live resources with Weary/Miserable and single-step undo, ask
+the Telling Table a yes/no question, roll on (or define your own) oracle tables, and now run
+full journeys: define waypoints, execute a configurable step-by-step template per leg (with
+the Solo Journey Events + seven Event Detail tables shipped as skeletons, and journey roles
+that correctly drop out for a solo company), pause/resume/abandon mid-route, and get a
+pasteable summary on arrival. The step template editor lets you edit, reorder, duplicate, and
+disable steps, or build your own template from scratch. The UI is plain, not polished — the
+bar through this milestone is "a winter journey runs end to end and produces a summary worth
+pasting into a journal" (the PRD's own Milestone 3 bar). Milestone 4 (Fellowship phase +
+combat, reusing this same step template engine) is next.
 
 ## Design commitments
 

@@ -1,7 +1,7 @@
 # Product Requirements Document
 ## Strider Mode Companion — a solo play assistant for The One Ring 2e
 
-**Version:** 1.2 (development baseline)
+**Version:** 1.3 (development baseline)
 **Status:** Approved for development
 **Last updated:** 12 August 2026
 
@@ -10,6 +10,8 @@
 **Changes since 1.0:** F1.5 and F1.6 clarified with the concrete Target Number formulas (solo vs. standard); F2.3 clarified with the Telling Table's actual chance-band mechanism. Resolved against the primary source now that it's available for reference; no IDs added or renumbered, no table result content reproduced (still C1/C2-clean).
 
 **Changes since 1.1:** F2.1 corrected to match F2.3/the primary source — the Telling Table is a binary yes/no with an extremity flag on rune/Eye, not the six-tier yes-and/yes-but/no-but/no-and scale it previously described (that wording predated checking the book, same root cause as the F2.3 fix).
+
+**Changes since 1.2:** F3.5 clarified — roles are skipped entirely (not just de-emphasised) for a company of one, confirmed directly in Strider Mode rather than inferred from the general solo-adjustment pattern (D11). No numeric journey-procedure values (leg length, Fatigue accrual, roll frequency) were added to F3.3, since those live in the core rulebook, which isn't on file — see D12.
 
 ---
 
@@ -172,7 +174,7 @@ The journey procedure is implemented as a **configurable step template**, not ha
 
 **F3.4** Allow the user to duplicate, edit, reorder, and disable steps within a template, and save the result as a named variant.
 
-**F3.5** Assign journey roles (Guide, Scout, Hunter, Look-out) to heroes, and route each step's roll to the hero holding the relevant role.
+**F3.5** Assign journey roles (Guide, Scout, Hunter, Look-out) to heroes, and route each step's roll to the hero holding the relevant role, for a company of two to four. For a company of exactly one, roles are skipped entirely and every step routes to the sole Player-hero — confirmed in Strider Mode ("Journey roles are not used in Strider Mode"), not just implied by the general solo-adjustment pattern (F1.5).
 
 **F3.6** Execute the journey one leg at a time, running the loaded template per leg and prompting only for what the template requires.
 
@@ -375,3 +377,5 @@ No accounts and no telemetry, so measurement is indirect and qualitative:
 | D8 | Solo TN formula is 18 − Attribute, standard is 20 − Attribute, selected by company size | Confirmed against the Strider Mode source; was previously an unspecified "adjustment" in F1.5 |
 | D9 | Oracle likelihood weighting (F2.3) is a single-roll five-band threshold on the Feat die, not a Mythic-style drifting Chaos Factor | Matches Strider Mode's actual Telling Table mechanic; avoids importing unrelated system complexity |
 | D10 | Telling Table answer is binary yes/no with an extremity flag (F2.1), not a six-tier yes-and/yes-but/no-but/no-and scale | F2.1's original wording predated checking the book and didn't match the actual table (page 10); corrected to be consistent with D9/F2.3 |
+| D11 | Journey roles (F3.5) are skipped entirely for a company of one, not just de-emphasised | Confirmed on p.3/p.16: "Journey roles are not used in Strider Mode" — the sole Player-hero handles everything. Company size 2-4 still uses roles per §4's "solo company" design |
+| D12 | Default journey step template ships with blank skill/Fatigue-amount fields rather than guessed values | Strider Mode p.16 confirms the base numeric journey procedure lives in the core rulebook, which isn't on file — only the supplement is. What's verified and encoded instead: the Solo Journey Events + seven Event Detail table skeletons (p.17-19) and the Border/Wild/Dark Land → Favoured/normal/Ill-favoured Feat die mapping (p.17) |

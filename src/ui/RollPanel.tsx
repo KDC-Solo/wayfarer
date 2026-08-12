@@ -25,6 +25,10 @@ interface Props {
     result: SkillRollResult;
     inputMode: DiceInputMode;
   }) => void;
+  /** Used by JourneyRunner to pre-fill the event's called-for skill and the
+   * land-danger-derived favour (Strider Mode p.17) — still user-overridable (N7). */
+  initialSkillName?: string;
+  initialFavourMode?: FavourMode;
 }
 
 type Phase =
@@ -32,10 +36,21 @@ type Phase =
   | { kind: 'collecting'; requirement: RollRequirement; featDice: FeatDieFace[]; successDice: SuccessDieFace[] }
   | { kind: 'resolved'; result: SkillRollResult; skillName: string };
 
-export function RollPanel({ hero, companySize, diceInputMode, onResolved }: Props) {
-  const [skillName, setSkillName] = useState<string>(Object.keys(hero.skills)[0] ?? '');
+export function RollPanel({
+  hero,
+  companySize,
+  diceInputMode,
+  onResolved,
+  initialSkillName,
+  initialFavourMode,
+}: Props) {
+  const [skillName, setSkillName] = useState<string>(
+    initialSkillName && initialSkillName in hero.skills
+      ? initialSkillName
+      : (Object.keys(hero.skills)[0] ?? ''),
+  );
   const [attribute, setAttribute] = useState<AttributeName>('heart');
-  const [favourMode, setFavourMode] = useState<FavourMode>('normal');
+  const [favourMode, setFavourMode] = useState<FavourMode>(initialFavourMode ?? 'normal');
   const [hopeSpent, setHopeSpent] = useState(false);
   const [phase, setPhase] = useState<Phase>({ kind: 'setup' });
 

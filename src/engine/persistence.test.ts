@@ -1,16 +1,26 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createChronicle } from './chronicle.ts';
+import { createJourney, saveAsRoute } from './journey.ts';
 import { createLogEntry } from './log.ts';
 import { createOracleTable } from './oracleTable.ts';
+import { createStepTemplate } from './stepTemplate.ts';
 import {
   appendLogEntry,
   clearAll,
   deleteOracleTable,
+  deleteRoute,
+  deleteStepTemplate,
+  getAllJourneys,
   getAllLogEntries,
   getAllOracleTables,
+  getAllRoutes,
+  getAllStepTemplates,
   getChronicle,
   putChronicle,
+  putJourney,
   putOracleTable,
+  putRoute,
+  putStepTemplate,
 } from './persistence.ts';
 
 beforeEach(async () => {
@@ -80,5 +90,46 @@ describe('oracle table persistence', () => {
     await putOracleTable(table);
     await deleteOracleTable(table.id);
     expect(await getAllOracleTables()).toEqual([]);
+  });
+});
+
+describe('step template persistence', () => {
+  it('round-trips and deletes by id', async () => {
+    const template = createStepTemplate('Standard Leg');
+    await putStepTemplate(template);
+    expect(await getAllStepTemplates()).toEqual([template]);
+    await deleteStepTemplate(template.id);
+    expect(await getAllStepTemplates()).toEqual([]);
+  });
+});
+
+describe('journey persistence', () => {
+  it('round-trips through put/getAll', async () => {
+    const journey = createJourney({
+      origin: 'Bree',
+      destination: 'Rivendell',
+      season: 'winter',
+      waypoints: [],
+      stepTemplateId: 'template-1',
+    });
+    await putJourney(journey);
+    expect(await getAllJourneys()).toEqual([journey]);
+  });
+});
+
+describe('route persistence', () => {
+  it('round-trips and deletes by id', async () => {
+    const journey = createJourney({
+      origin: 'Bree',
+      destination: 'Rivendell',
+      season: 'winter',
+      waypoints: [{ name: 'Weathertop', distance: 3, terrain: 'hills' }],
+      stepTemplateId: 'template-1',
+    });
+    const route = saveAsRoute(journey, 'Winter path');
+    await putRoute(route);
+    expect(await getAllRoutes()).toEqual([route]);
+    await deleteRoute(route.id);
+    expect(await getAllRoutes()).toEqual([]);
   });
 });

@@ -12,30 +12,47 @@ import { createLogEntry } from './engine/log.ts';
 import {
   appendLogEntry,
   deleteOracleTable,
+  deleteStepTemplate,
+  getAllJourneys,
   getAllLogEntries,
   getAllOracleTables,
+  getAllRoutes,
+  getAllStepTemplates,
   getChronicle,
   putChronicle,
+  putJourney,
   putOracleTable,
+  putRoute,
+  putStepTemplate,
 } from './engine/persistence.ts';
 import { exportState, importState, serializeState } from './engine/export.ts';
 import type { SkillRollResult } from './engine/dice.ts';
 import type { TellingTableResult } from './engine/tellingTable.ts';
 import type { OracleTable } from './engine/oracleTable.ts';
+import type { Journey, Route } from './engine/journey.ts';
+import type { StepTemplate } from './engine/stepTemplate.ts';
 import type { ResourceField } from './engine/resources.ts';
 import type { Chronicle, DiceInputMode, Hero, LogEntry } from './engine/types.ts';
 import { defaultOracleTables } from './data/oracleTables.ts';
+import { defaultJourneyContent } from './data/journeyStepTemplates.ts';
 import { CompanyOverview } from './ui/CompanyOverview.tsx';
 import { HeroForm } from './ui/HeroForm.tsx';
 import { RollPanel } from './ui/RollPanel.tsx';
 import { OraclePanel } from './ui/OraclePanel.tsx';
 import { TableRoller } from './ui/TableRoller.tsx';
 import { TableEditor } from './ui/TableEditor.tsx';
+import { JourneyPlanner } from './ui/JourneyPlanner.tsx';
+import { JourneyRunner } from './ui/JourneyRunner.tsx';
+import { StepTemplateEditor } from './ui/StepTemplateEditor.tsx';
 
 export default function App() {
   const [chronicle, setChronicle] = useState<Chronicle | null>(null);
   const [log, setLog] = useState<LogEntry[]>([]);
   const [oracleTables, setOracleTables] = useState<OracleTable[]>([]);
+  const [stepTemplates, setStepTemplates] = useState<StepTemplate[]>([]);
+  const [journeys, setJourneys] = useState<Journey[]>([]);
+  const [routes, setRoutes] = useState<Route[]>([]);
+  const [activeJourneyId, setActiveJourneyId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [showHeroForm, setShowHeroForm] = useState(false);
   const [lastResourceChange, setLastResourceChange] = useState<LogEntry | null>(null);
@@ -52,11 +69,23 @@ export default function App() {
     setLog(await getAllLogEntries());
 
     let tables = await getAllOracleTables();
+    let templates = await getAllStepTemplates();
     if (tables.length === 0) {
-      tables = defaultOracleTables();
+      const { tables: journeyTables, template } = defaultJourneyContent();
+      tables = [...defaultOracleTables(), ...journeyTables];
       for (const t of tables) await putOracleTable(t);
+      templates = [template];
+      await putStepTemplate(template);
     }
     setOracleTables(tables);
+    setStepTemplates(templates);
+
+    const loadedJourneys = await getAllJourneys();
+    setJourneys(loadedJourneys);
+    setActiveJourneyId(
+      loadedJourneys.find((j) => j.status === 'in-progress' || j.status === 'paused')?.id ?? null,
+    );
+    setRoutes(await getAllRoutes());
   }
 
   useEffect(() => {
@@ -178,6 +207,45 @@ export default function App() {
     setOracleTables((t) => t.filter((table) => table.id !== id));
   }
 
+  async function handleCreateStepTemplate(template: StepTemplate) {
+    await putStepTemplate(template);
+    setStepTemplates((t) => [...t, template]);
+  }
+
+  async function handleUpdateStepTemplate(template: StepTemplate) {
+    await putStepTemplate(template);
+    setStepTemplates((t) => t.map((existing) => (existing.id === template.id ? template : existing)));
+  }
+
+  async function handleDeleteStepTemplate(id: string) {
+    await deleteStepTemplate(id);
+    setStepTemplates((t) => t.filter((template) => template.id !== id));
+  }
+
+  async function handleBeginJourney(journey: Journey) {
+    await putJourney(journey);
+    setJourneys((j) => [...j, journey]);
+    setActiveJourneyId(journey.id);
+  }
+
+  async function handleJourneyApply(params: { chronicle: Chronicle; journey: Journey; logEntries: LogEntry[] }) {
+    await putChronicle(params.chronicle);
+    await putJourney(params.journey);
+    for (const entry of params.logEntries) {
+      await appendLogEntry(entry);
+    }
+    setChronicle(params.chronicle);
+    setJourneys((j) => j.map((existing) => (existing.id === params.journey.id ? params.journey : existing)));
+    if (params.logEntries.length > 0) {
+      setLog((l) => [...l, ...params.logEntries]);
+    }
+  }
+
+  async function handleSaveRoute(route: Route) {
+    await putRoute(route);
+    setRoutes((r) => [...r, route]);
+  }
+
   async function handleExport() {
     const envelope = await exportState();
     const blob = new Blob([serializeState(envelope)], { type: 'application/json' });
@@ -202,6 +270,10 @@ export default function App() {
   if (!chronicle) return <p>Loading…</p>;
 
   const activeHero = getActiveHero(chronicle);
+  const activeJourney = journeys.find((j) => j.id === activeJourneyId) ?? null;
+  const activeJourneyTemplate = activeJourney
+    ? (stepTemplates.find((t) => t.id === activeJourney.stepTemplateId) ?? null)
+    : null;
 
   return (
     <main>
@@ -239,6 +311,34 @@ export default function App() {
         onCreate={handleCreateTable}
         onUpdate={handleUpdateTable}
         onDelete={handleDeleteTable}
+      />
+
+      {activeJourney && activeJourneyTemplate ? (
+        <JourneyRunner
+          chronicle={chronicle}
+          journey={activeJourney}
+          template={activeJourneyTemplate}
+          oracleTables={oracleTables}
+          log={log}
+          onApply={handleJourneyApply}
+          onSaveRoute={handleSaveRoute}
+          onDismiss={() => setActiveJourneyId(null)}
+        />
+      ) : (
+        <JourneyPlanner
+          company={chronicle.company}
+          stepTemplates={stepTemplates}
+          routes={routes}
+          onBegin={handleBeginJourney}
+        />
+      )}
+
+      <StepTemplateEditor
+        templates={stepTemplates}
+        oracleTables={oracleTables}
+        onCreate={handleCreateStepTemplate}
+        onUpdate={handleUpdateStepTemplate}
+        onDelete={handleDeleteStepTemplate}
       />
 
       <footer>
