@@ -60,9 +60,12 @@ interface QualityProfile {
   enableShadows: boolean;
 }
 
+// scale is dice size relative to the canvas. The library's default (5)
+// reads as tiny in a short, wide tray like ours, so both profiles run
+// larger — the dice are the point of turning this on.
 const QUALITY_PROFILES: Record<Exclude<DiceQuality, 'off'>, QualityProfile> = {
-  low: { shadowQuality: 'none', scale: 5, enableShadows: false },
-  high: { shadowQuality: 'high', scale: 6, enableShadows: true },
+  low: { shadowQuality: 'none', scale: 11, enableShadows: false },
+  high: { shadowQuality: 'high', scale: 11, enableShadows: true },
 };
 
 /**
@@ -92,7 +95,11 @@ export function diceAssetPath(baseUrl = import.meta.env.BASE_URL, documentBase?:
  * change breaks compilation here rather than at every call site. */
 interface DiceBoxLike {
   init(): Promise<unknown>;
-  roll(notation: string): Promise<Array<{ sides: number; value: number }>>;
+  /** Accepts an array of notations for a mixed throw. A joined string
+   * like "1d12+2d6" is NOT equivalent: dice-box reads `+2d6` as a
+   * numeric modifier on a single group, so only the d12 was ever
+   * rendered while the Success dice silently never appeared. */
+  roll(notation: string[]): Promise<Array<{ sides: number; value: number }>>;
   clear(): void;
   hide?: () => void;
   show?: () => void;
@@ -221,7 +228,8 @@ export async function rollIn3d(
   if (parts.length === 0) return { featDice: [], successDice: [] };
 
   try {
-    const results = await box.roll(parts.join('+'));
+    // One notation per dice group — see DiceBoxLike.roll.
+    const results = await box.roll(parts);
     const featDice = results.filter((r) => r.sides === 12).map((r) => featFaceFromD12(r.value));
     const successDice = results.filter((r) => r.sides === 6).map((r) => r.value as SuccessDieFace);
     if (featDice.length !== featCount || successDice.length !== successCount) return null;

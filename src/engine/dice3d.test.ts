@@ -86,6 +86,25 @@ describe('rollIn3d (F7.1/F7.2 — simulation-sourced, failure-tolerant)', () => 
     expect(await rollIn3d(null, 1, 3)).toBeNull();
   });
 
+  it('sends one notation per dice group, so every die is actually thrown', async () => {
+    let notation: string[] = [];
+    const box = {
+      init: async () => undefined,
+      clear: () => {},
+      roll: async (n: string[]) => {
+        notation = n;
+        return [
+          { sides: 12, value: 3 },
+          { sides: 6, value: 5 },
+          { sides: 6, value: 2 },
+        ];
+      },
+    };
+    await rollIn3d(box, 1, 2);
+    // "1d12+2d6" would read as a modifier and render only the d12.
+    expect(notation).toEqual(['1d12', '2d6']);
+  });
+
   it('reads the resting faces the simulation reports', async () => {
     const box = {
       init: async () => undefined,
@@ -101,17 +120,17 @@ describe('rollIn3d (F7.1/F7.2 — simulation-sourced, failure-tolerant)', () => 
   });
 
   it('asks for only the Feat die when the Success pool is resolved numerically (F7.7)', async () => {
-    let notation = '';
+    let notation: string[] = [];
     const box = {
       init: async () => undefined,
       clear: () => {},
-      roll: async (n: string) => {
+      roll: async (n: string[]) => {
         notation = n;
         return [{ sides: 12, value: 7 }];
       },
     };
     const result = await rollIn3d(box, 1, 0);
-    expect(notation).toBe('1d12');
+    expect(notation).toEqual(['1d12']);
     expect(result).toEqual({ featDice: [7], successDice: [] });
   });
 

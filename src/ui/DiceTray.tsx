@@ -22,12 +22,16 @@ const CONTAINER_ID = 'dice-tray';
 export function useDice3d() {
   const [quality, setQuality] = useState<DiceQuality>(() => loadDiceQuality());
   const [rolling, setRolling] = useState(false);
+  /** True from the moment dice are thrown until the next throw clears
+   * them — the tray stays open across the result so the dice can be read. */
+  const [showing, setShowing] = useState(false);
   /** F7.8 — set when the player skips; the in-flight roll is discarded. */
   const skippedRef = useRef(false);
 
   function changeQuality(next: DiceQuality) {
     setQuality(next);
     saveDiceQuality(next);
+    if (next === 'off') setShowing(false);
   }
 
   /** Resolves to simulated faces, or null to mean "use the numeric path."
@@ -37,14 +41,20 @@ export function useDice3d() {
     if (quality === 'off') return null;
     skippedRef.current = false;
     setRolling(true);
+    setShowing(true);
     try {
       const box = await withTimeout(getDiceBox(quality, `#${CONTAINER_ID}`));
       if (!box) {
         // Timed out (or failed) loading — don't make every later roll
         // wait out the same timeout.
         markDiceBoxUnavailable();
+        setShowing(false);
         return null;
       }
+      // dice-box measures the canvas once at init and thereafter only on
+      // window resize, so nudge it now that the tray is definitely laid
+      // out — otherwise dice sized for a collapsed box come out tiny.
+      window.dispatchEvent(new Event('resize'));
       const result = await withTimeout(rollIn3d(box, featCount, successCount));
       return skippedRef.current ? null : result;
     } finally {
@@ -57,12 +67,29 @@ export function useDice3d() {
     setRolling(false);
   }
 
-  return { quality, changeQuality, roll, rolling, skip };
+  /** Called when the player starts another roll — until then the dice
+   * from the last throw stay on the table, which is the whole point of
+   * having thrown them. */
+  async function clear() {
+    setShowing(false);
+    const box = await getDiceBox(quality, `#${CONTAINER_ID}`).catch(() => null);
+    box?.clear();
+  }
+
+  return { quality, changeQuality, roll, rolling, showing, skip, clear };
 }
 
-export function DiceTray({ rolling, onSkip }: { rolling: boolean; onSkip: () => void }) {
+export function DiceTray({
+  enabled,
+  rolling,
+  onSkip,
+}: {
+  enabled: boolean;
+  rolling: boolean;
+  onSkip: () => void;
+}) {
   return (
-    <div className={`dice-tray${rolling ? ' rolling' : ''}`}>
+    <div className={`dice-tray${enabled ? ' enabled' : ''}${rolling ? ' rolling' : ''}`}>
       <div id={CONTAINER_ID} aria-hidden="true" />
       {rolling && (
         <button className="ghost dice-skip" onClick={onSkip}>

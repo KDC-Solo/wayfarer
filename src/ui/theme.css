@@ -557,14 +557,27 @@ legend {
   position: relative;
 }
 
+/* The container must have its real size *before* dice-box initialises:
+   the library measures the canvas once and then only on window resize,
+   so a collapsed box permanently mis-sizes the dice. It therefore opens
+   whenever 3D is enabled, not only mid-throw — which also means the dice
+   stay readable after they land instead of vanishing with the tray. */
 .dice-tray #dice-tray {
   width: 100%;
   height: 0;
   transition: height 0.2s ease;
 }
 
-.dice-tray.rolling #dice-tray {
-  height: 240px;
+.dice-tray.enabled #dice-tray {
+  /* Aspect matters: dice-box throws from the edges, so a wide letterbox
+     leaves big dice piled in the corners. Roughly 3:2 and centred keeps
+     them on the table and in view. */
+  height: 320px;
+  max-width: 520px;
+  margin: var(--space-2) auto;
+  border-radius: var(--radius-md);
+  background: var(--bg-sunken);
+  border: 1px solid var(--border);
 }
 
 .dice-tray #dice-tray canvas {

@@ -87,6 +87,7 @@ export function RollPanel({
   const attributeValue = hero.attributes[attribute];
 
   function beginRoll() {
+    void dice3d.clear(); // sweep the last throw off the table first
     const tn = tnOverride.trim() === '' ? undefined : Number(tnOverride);
     const requirement = describeRollRequirement({
       skillRank,
@@ -175,7 +176,7 @@ export function RollPanel({
           rendering into it while the dice tumble (the phase flips to
           'resolved' as soon as faces are read). Collapsed to zero height
           when idle, so an off/absent 3D module costs no layout. */}
-      <DiceTray rolling={dice3d.rolling} onSkip={dice3d.skip} />
+      <DiceTray enabled={dice3d.quality !== 'off'} rolling={dice3d.rolling} onSkip={dice3d.skip} />
 
       {phase.kind === 'setup' && (
         <>

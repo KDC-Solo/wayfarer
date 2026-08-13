@@ -87,3 +87,28 @@ test('with 3D on, the simulation renders into a stable canvas and always yields 
   // dice-box would lose the container it renders into mid-animation.
   await expect(page.locator('#dice-tray canvas')).toHaveCount(1);
 });
+
+test('thrown dice are readable and stay on the table until the next roll', async ({ page }) => {
+  test.setTimeout(90_000);
+  await createHero(page);
+  await openRollOptions(page);
+  await page.getByLabel('3D dice').selectOption('high');
+
+  // The tray must be laid out before the first roll: dice-box measures
+  // its canvas once at init, so a collapsed box permanently mis-sizes
+  // the dice — that's what made them come out tiny.
+  const tray = page.locator('#dice-tray');
+  await expect.poll(async () => Math.round((await tray.boundingBox())?.height ?? 0)).toBeGreaterThan(200);
+
+  await page.getByRole('button', { name: '🎲 Roll' }).click();
+  await expect(page.getByText(/vs TN/)).toBeVisible({ timeout: 25000 });
+
+  // The old bug: the tray collapsed the instant physics settled, so the
+  // dice vanished before they could be read.
+  await page.waitForTimeout(1200);
+  const canvas = page.locator('#dice-tray canvas');
+  await expect(canvas).toBeVisible();
+  const box = await canvas.boundingBox();
+  expect(box!.height).toBeGreaterThan(200);
+  expect(box!.width).toBeGreaterThan(200);
+});
