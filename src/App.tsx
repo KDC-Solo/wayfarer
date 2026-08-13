@@ -71,6 +71,8 @@ import { DicePackEditor } from './ui/DicePackEditor.tsx';
 import { Nav, type TabId } from './ui/Nav.tsx';
 import { BrandMark } from './ui/BrandMark.tsx';
 import { Welcome } from './ui/Welcome.tsx';
+import { Toast, type ToastMessage } from './ui/Toast.tsx';
+import { requestPersistence } from './engine/storage.ts';
 
 const COMBAT_TEMPLATE_SEEDED_KEY = 'wayfarer.seeded.combat-template';
 const LORE_TABLE_SEEDED_KEY = 'wayfarer.seeded.lore-table';
@@ -111,7 +113,7 @@ export default function App() {
   const [activeFellowshipPhaseId, setActiveFellowshipPhaseId] = useState<string | null>(null);
   const [combats, setCombats] = useState<Combat[]>([]);
   const [activeCombatId, setActiveCombatId] = useState<string | null>(null);
-  const [status, setStatus] = useState<string | null>(null);
+  const [status, setStatus] = useState<ToastMessage | null>(null);
   const [showHeroForm, setShowHeroForm] = useState(false);
   const [lastResourceChange, setLastResourceChange] = useState<LogEntry | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -187,7 +189,10 @@ export default function App() {
   }
 
   useEffect(() => {
-    refresh().catch((err) => setStatus(`Failed to load: ${String(err)}`));
+    refresh().catch((err) => setStatus({ tone: 'error', text: `Failed to load: ${String(err)}` }));
+    // Ask the browser not to evict this origin. Everything the player
+    // owns is local, so eviction is data loss (see engine/storage.ts).
+    void requestPersistence();
   }, []);
 
   /** F6.1 — every entry persisted while a session is open is stamped with
@@ -504,9 +509,9 @@ export default function App() {
         r.tablesAdded && `added ${r.tablesAdded}`,
         r.loreTablesFilled && 'filled the Lore Table',
       ].filter(Boolean);
-      setStatus(`Table content imported — ${bits.join(', ')}.`);
+      setStatus({ tone: 'success', text: `Table content imported — ${bits.join(', ')}. Saved to this browser.` });
     } catch (err) {
-      setStatus(`Import failed: ${err instanceof Error ? err.message : String(err)}`);
+      setStatus({ tone: 'error', text: `Import failed: ${err instanceof Error ? err.message : String(err)}` });
     }
   }
 
@@ -514,9 +519,9 @@ export default function App() {
     try {
       await importState(await file.text());
       await refresh();
-      setStatus('Import complete.');
+      setStatus({ tone: 'success', text: 'Everything restored from your backup file.' });
     } catch (err) {
-      setStatus(`Import failed: ${err instanceof Error ? err.message : String(err)}`);
+      setStatus({ tone: 'error', text: `Import failed: ${err instanceof Error ? err.message : String(err)}` });
     }
   }
 
@@ -563,6 +568,7 @@ export default function App() {
 
   return (
     <>
+      <Toast message={status} onDismiss={() => setStatus(null)} />
       <header className="app-header">
         <div className="brand">
           <BrandMark className="brand-mark" />
@@ -745,8 +751,7 @@ export default function App() {
 
         <footer className="app-footer">
           {importControl}
-          <span>{log.length} log entries</span>
-          {status && <span role="status">{status}</span>}
+          <span>{log.length} log entries · saved in this browser</span>
         </footer>
       </main>
     </>

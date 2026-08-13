@@ -32,7 +32,7 @@ test('a content pack fills the skeletons and spares the chronicle', async ({ pag
   await expect(page.getByText('Before the import.')).toBeVisible();
 
   await openTab(page, 'Oracle');
-  await page.setInputFiles('.roll-panel:has-text("Tables") input[type="file"]', {
+  await page.setInputFiles('.roll-panel:has-text("Manage tables") input[type="file"]', {
     name: 'pack.json',
     mimeType: 'application/json',
     buffer: Buffer.from(PACK),
@@ -59,4 +59,42 @@ test('a content pack fills the skeletons and spares the chronicle', async ({ pag
 
   await openTab(page, 'Chronicle');
   await expect(page.getByText('Before the import.')).toBeVisible();
+});
+
+test('imported content survives a browser refresh', async ({ page }) => {
+  await createHero(page);
+  await openTab(page, 'Oracle');
+  await page.setInputFiles('.roll-panel:has-text("Manage tables") input[type="file"]', {
+    name: 'pack.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(PACK),
+  });
+  await expect(page.getByText(/Table content imported/)).toBeVisible();
+
+  // Full reload — new page, storage re-read from IndexedDB.
+  await page.reload();
+  await openTab(page, 'Oracle');
+
+  const roller = page.locator('.roll-panel').filter({ hasText: 'Roll on a table' });
+  await selectTable(page, 'Fortune Table');
+  await roller.getByRole('button', { name: 'Feat die 4' }).click();
+  await expect(roller.locator('.table-result')).toHaveText('Placeholder 4');
+});
+
+test('the import confirmation is visible and dismissible, not buried in the footer', async ({ page }) => {
+  await createHero(page);
+  await openTab(page, 'Oracle');
+  await page.setInputFiles('.roll-panel:has-text("Manage tables") input[type="file"]', {
+    name: 'pack.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(PACK),
+  });
+
+  const toast = page.locator('.toast-success');
+  await expect(toast).toBeVisible();
+  await expect(toast).toContainText('filled 1 tables');
+  await expect(toast).toBeInViewport();
+
+  await toast.getByRole('button', { name: 'Dismiss message' }).click();
+  await expect(toast).toHaveCount(0);
 });

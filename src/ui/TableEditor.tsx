@@ -48,9 +48,21 @@ export function TableEditor({ tables, onCreate, onUpdate, onDelete, onImportPack
     setNewSource('');
   }
 
+  const filled = tables.filter((t) => t.rows.some((r) => r.text.trim())).length;
+
   return (
     <section className="roll-panel">
-      <h3>Tables</h3>
+      {/* Editing tables is setup, not play. Once they're populated this
+          is a wall of inputs sitting under the roller you actually use,
+          so it collapses — open by default only while everything is
+          still blank, which is exactly when a new player needs it. */}
+      <details className="table-admin" open={filled === 0}>
+        <summary>
+          <span>Manage tables</span>
+          <span className="table-admin-count">
+            {filled} of {tables.length} filled
+          </span>
+        </summary>
 
       {onImportPack && (
         <div className="toolbar">
@@ -106,6 +118,7 @@ export function TableEditor({ tables, onCreate, onUpdate, onDelete, onImportPack
           onRename={(name) => onUpdate(renameTable(selected, name))}
         />
       )}
+      </details>
     </section>
   );
 }

@@ -1165,3 +1165,106 @@ button.ghost.icon {
   font-size: 1.1rem;
   color: var(--fg);
 }
+
+/* ---------- toast ---------- */
+
+.toast {
+  position: fixed;
+  z-index: 50;
+  inset-block-start: var(--space-4);
+  inset-inline: var(--space-4);
+  margin-inline: auto;
+  max-width: 30rem;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-elevated);
+  box-shadow: var(--shadow-md);
+  animation: toast-in 0.2s ease;
+}
+
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast {
+    animation: none;
+  }
+}
+
+.toast p {
+  margin: 0;
+  flex: 1;
+  color: var(--fg);
+}
+
+.toast > span[aria-hidden] {
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+.toast-success {
+  border-color: var(--success);
+}
+
+.toast-success > span[aria-hidden] {
+  color: var(--success);
+}
+
+.toast-error {
+  border-color: var(--danger);
+}
+
+.toast-error > span[aria-hidden] {
+  color: var(--danger);
+}
+
+.toast button {
+  min-height: 1.75rem;
+  min-width: 1.75rem;
+  padding: 0;
+  border: none;
+}
+
+/* ---------- collapsed table admin ---------- */
+
+.table-admin > summary {
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  list-style: none;
+}
+
+.table-admin > summary::marker,
+.table-admin > summary::-webkit-details-marker {
+  display: none;
+}
+
+.table-admin > summary::before {
+  content: '▸';
+  color: var(--fg-subtle);
+  font-size: 0.8rem;
+}
+
+.table-admin[open] > summary::before {
+  content: '▾';
+}
+
+.table-admin-count {
+  margin-inline-start: auto;
+  font-family: var(--font-sans);
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--fg-subtle);
+}
