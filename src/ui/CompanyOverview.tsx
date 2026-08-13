@@ -2,15 +2,6 @@ import { deriveHeroStates } from '../engine/hero.ts';
 import type { ResourceField } from '../engine/resources.ts';
 import type { Chronicle, DiceInputMode, Hero } from '../engine/types.ts';
 
-const RESOURCE_FIELDS: ResourceField[] = [
-  'endurance',
-  'hope',
-  'fatigue',
-  'shadow',
-  'shadowPoints',
-  'shadowScars',
-];
-
 export const RESOURCE_FIELD_LABEL: Record<ResourceField, string> = {
   endurance: 'Endurance',
   hope: 'Hope',
@@ -45,32 +36,6 @@ export function CompanyOverview({
 
   return (
     <section>
-      <div className="toolbar">
-        <label>
-          Dice input mode
-          <select
-            value={chronicle.diceInputMode}
-            onChange={(e) => onDiceModeChange(e.target.value as DiceInputMode)}
-          >
-            <option value="app-rolls">App rolls</option>
-            <option value="player-rolls">Player rolls</option>
-            <option value="hybrid">Hybrid</option>
-          </select>
-        </label>
-        <span>
-          Solo balancing (TN 18 − Attribute):{' '}
-          <strong>{soloAdjustment ? 'active' : 'inactive'}</strong> — follows company size
-        </span>
-        <button className="ghost" onClick={onUndo} disabled={!canUndo}>
-          ↩ Undo
-        </button>
-        {chronicle.company.length < 4 && (
-          <button className="primary" onClick={onAddHero}>
-            + Add hero
-          </button>
-        )}
-      </div>
-
       <div className="company-grid">
         {chronicle.company.map((hero) => (
           <HeroCard
@@ -83,6 +48,29 @@ export function CompanyOverview({
           />
         ))}
         {chronicle.company.length === 0 && <p>No heroes yet — add one to begin.</p>}
+      </div>
+
+      {/* Settings, not actions: the roll is what this screen is for, so
+          these sit under the company rather than above it. */}
+      <div className="toolbar subtle">
+        <label>
+          Dice input mode
+          <select
+            value={chronicle.diceInputMode}
+            onChange={(e) => onDiceModeChange(e.target.value as DiceInputMode)}
+          >
+            <option value="app-rolls">App rolls everything</option>
+            <option value="player-rolls">I roll my own dice</option>
+            <option value="hybrid">Hybrid — I roll the Feat die</option>
+          </select>
+        </label>
+        <span title="Solo play uses TN 18 − Attribute; a company of 2+ uses 20 − Attribute.">
+          Solo balancing {soloAdjustment ? 'on' : 'off'}
+        </span>
+        <button className="ghost" onClick={onUndo} disabled={!canUndo}>
+          ↩ Undo
+        </button>
+        {chronicle.company.length < 4 && <button onClick={onAddHero}>+ Add hero</button>}
       </div>
     </section>
   );
@@ -102,41 +90,121 @@ function HeroCard({
   onResourceDelta: (field: ResourceField, delta: number) => void;
 }) {
   const { weary, miserable } = deriveHeroStates(hero);
+  const descriptor = [hero.culture, hero.calling].filter(Boolean).join(' · ');
+
   return (
     <article className={`hero-card${isActive ? ' active' : ''}`}>
       <header>
-        <button onClick={onSetActive} aria-pressed={isActive}>
+        <h4>{hero.name}</h4>
+        <button
+          className={isActive ? 'chip is-active' : 'chip'}
+          onClick={onSetActive}
+          aria-pressed={isActive}
+          title={isActive ? 'Rolls default to this hero' : 'Make this hero active'}
+        >
           {isActive ? '● Active' : 'Set active'}
         </button>
-        <h4>{hero.name}</h4>
-        <button onClick={onRemove} aria-label={`Remove ${hero.name}`}>
+        <button className="ghost icon" onClick={onRemove} aria-label={`Remove ${hero.name}`}>
           ✕
         </button>
       </header>
-      <p>
-        {hero.culture || '—'} · {hero.calling || '—'}
-      </p>
-      {weary && <span className="badge">Weary</span>}
-      {miserable && <span className="badge">Miserable</span>}
-      {hero.wounded && <span className="badge">{hero.woundTreated ? 'Wounded (treated)' : 'Wounded'}</span>}
-      <table>
-        <tbody>
-          {RESOURCE_FIELDS.map((field) => (
-            <tr key={field}>
-              <td>{RESOURCE_FIELD_LABEL[field]}</td>
-              <td>{hero.resources[field]}</td>
-              <td>
-                <button onClick={() => onResourceDelta(field, -1)} aria-label={`Decrease ${RESOURCE_FIELD_LABEL[field]}`}>
-                  −
-                </button>
-                <button onClick={() => onResourceDelta(field, 1)} aria-label={`Increase ${RESOURCE_FIELD_LABEL[field]}`}>
-                  +
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+
+      {descriptor && <p className="hero-descriptor">{descriptor}</p>}
+
+      <div className="hero-badges">
+        {weary && <span className="badge">Weary</span>}
+        {miserable && <span className="badge">Miserable</span>}
+        {hero.wounded && <span className="badge">{hero.woundTreated ? 'Wounded · treated' : 'Wounded'}</span>}
+      </div>
+
+      {/* Endurance and Hope are the two the player watches all session, so
+          they get gauges; the Shadow/Fatigue counters sit below as plain
+          steppers. Fatigue reads against Endurance and Shadow against Hope
+          because that's what turns a hero Weary or Miserable (F1.15). */}
+      <Gauge
+        label="Endurance"
+        value={hero.resources.endurance}
+        against={hero.resources.fatigue}
+        againstLabel="Fatigue"
+        tone="endurance"
+        onDelta={(d) => onResourceDelta('endurance', d)}
+        onAgainstDelta={(d) => onResourceDelta('fatigue', d)}
+      />
+      <Gauge
+        label="Hope"
+        value={hero.resources.hope}
+        against={hero.resources.shadow}
+        againstLabel="Shadow"
+        tone="hope"
+        onDelta={(d) => onResourceDelta('hope', d)}
+        onAgainstDelta={(d) => onResourceDelta('shadow', d)}
+      />
+
+      <div className="hero-minor">
+        {(['shadowPoints', 'shadowScars'] as ResourceField[]).map((field) => (
+          <span key={field} className="stepper">
+            <button onClick={() => onResourceDelta(field, -1)} aria-label={`Decrease ${RESOURCE_FIELD_LABEL[field]}`}>
+              −
+            </button>
+            <b>{hero.resources[field]}</b>
+            <button onClick={() => onResourceDelta(field, 1)} aria-label={`Increase ${RESOURCE_FIELD_LABEL[field]}`}>
+              +
+            </button>
+            {RESOURCE_FIELD_LABEL[field]}
+          </span>
+        ))}
+      </div>
     </article>
+  );
+}
+
+function Gauge({
+  label,
+  value,
+  against,
+  againstLabel,
+  tone,
+  onDelta,
+  onAgainstDelta,
+}: {
+  label: string;
+  value: number;
+  against: number;
+  againstLabel: string;
+  tone: 'endurance' | 'hope';
+  onDelta: (delta: number) => void;
+  onAgainstDelta: (delta: number) => void;
+}) {
+  const pct = value > 0 ? Math.min(100, (Math.max(0, value - against) / value) * 100) : 0;
+  return (
+    <div className={`gauge tone-${tone}`}>
+      <div className="gauge-head">
+        <span className="gauge-label">{label}</span>
+        <span className="stepper">
+          <button onClick={() => onDelta(-1)} aria-label={`Decrease ${label}`}>
+            −
+          </button>
+          <b>{value}</b>
+          <button onClick={() => onDelta(1)} aria-label={`Increase ${label}`}>
+            +
+          </button>
+        </span>
+      </div>
+      <div className="gauge-track" role="presentation">
+        <div className="gauge-fill" style={{ width: `${pct}%` }} />
+      </div>
+      <div className="gauge-foot">
+        <span className="stepper subtle">
+          <button onClick={() => onAgainstDelta(-1)} aria-label={`Decrease ${againstLabel}`}>
+            −
+          </button>
+          <b>{against}</b>
+          <button onClick={() => onAgainstDelta(1)} aria-label={`Increase ${againstLabel}`}>
+            +
+          </button>
+          {againstLabel}
+        </span>
+      </div>
+    </div>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { addHero, getActiveHero, removeHero, setActiveHero } from './engine/company.ts';
+import { createQuickStartHero } from './engine/hero.ts';
 import { advanceYear, createChronicle, currentSessionId, setDiceInputMode, startSession } from './engine/chronicle.ts';
 import {
   changeResource,
@@ -183,6 +184,13 @@ export default function App() {
       setLog((l) => [...l, stamped]);
     }
     setChronicle(next);
+  }
+
+  /** The activation path: name in, playable hero out, straight to the
+   * Company tab with a roll ready. */
+  async function handleQuickStart(name: string) {
+    await handleAddHero(createQuickStartHero(name));
+    setTab('company');
   }
 
   async function handleAddHero(hero: Hero) {
@@ -537,17 +545,28 @@ export default function App() {
       <main>
         {!hasCompany ? (
           <>
-            <Welcome onCreateHero={() => setShowHeroForm(true)} />
-            {showHeroForm && <HeroForm onCreate={handleAddHero} onCancel={() => setShowHeroForm(false)} />}
+            {showHeroForm ? (
+              <HeroForm onCreate={handleAddHero} onCancel={() => setShowHeroForm(false)} />
+            ) : (
+              <Welcome onQuickStart={handleQuickStart} onFullSheet={() => setShowHeroForm(true)} />
+            )}
           </>
         ) : (
           <div className="view">
             {tab === 'company' && (
               <>
-                <div className="view-intro">
-                  <h2>Company</h2>
-                  <p>Your heroes, their resources, and the active roll.</p>
-                </div>
+                {/* The roll comes first: it is the action a player takes
+                    dozens of times a session, and it used to sit below a
+                    settings toolbar and the roster. */}
+                {activeHero && (
+                  <RollPanel
+                    hero={activeHero}
+                    companySize={chronicle.company.length}
+                    diceInputMode={chronicle.diceInputMode}
+                    dicePack={activeDicePack}
+                    onResolved={handleRollResolved}
+                  />
+                )}
                 <CompanyOverview
                   chronicle={chronicle}
                   onSetActive={handleSetActive}
@@ -559,15 +578,6 @@ export default function App() {
                   onAddHero={() => setShowHeroForm(true)}
                 />
                 {showHeroForm && <HeroForm onCreate={handleAddHero} onCancel={() => setShowHeroForm(false)} />}
-                {activeHero && (
-                  <RollPanel
-                    hero={activeHero}
-                    companySize={chronicle.company.length}
-                    diceInputMode={chronicle.diceInputMode}
-                    dicePack={activeDicePack}
-                    onResolved={handleRollResolved}
-                  />
-                )}
               </>
             )}
 

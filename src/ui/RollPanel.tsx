@@ -13,7 +13,7 @@ import {
 import { deriveHeroStates } from '../engine/hero.ts';
 import type { DiceInputMode, Hero } from '../engine/types.ts';
 import { DiceQualityControl, DiceTray, useDice3d } from './DiceTray.tsx';
-import type { DicePack } from '../engine/dicePack.ts';
+import { faceArt, featFaceKey, successFaceKey, type DicePack } from '../engine/dicePack.ts';
 
 type AttributeName = keyof Hero['attributes'];
 import { FeatDiePicker, SuccessDiePicker } from './DicePickers.tsx';
@@ -167,7 +167,7 @@ export function RollPanel({
   }
 
   return (
-    <section className="roll-panel">
+    <section className="roll-panel roll-panel-main">
       <h3>Roll for {hero.name}</h3>
 
       {/* Mounted for the panel's whole life, not just the setup phase: the
@@ -179,44 +179,45 @@ export function RollPanel({
 
       {phase.kind === 'setup' && (
         <>
-          <label>
-            {skillLabel ?? 'Skill'}
-            <select value={skillName} onChange={(e) => setSkillName(e.target.value)}>
-              {Object.keys(rankPool).map((s) => (
-                <option key={s} value={s}>
-                  {s} (rank {rankPool[s]})
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Attribute
-            <select value={attribute} onChange={(e) => setAttribute(e.target.value as AttributeName)}>
-              <option value="strength">Strength</option>
-              <option value="heart">Heart</option>
-              <option value="wits">Wits</option>
-            </select>
-          </label>
-          <label>
-            Favour
-            <select value={favourMode} onChange={(e) => setFavourMode(e.target.value as FavourMode)}>
-              <option value="normal">Normal</option>
-              <option value="favoured">Favoured</option>
-              <option value="ill-favoured">Ill-favoured</option>
-            </select>
-          </label>
-          <label>
+          {/* The three the player actually changes per roll, on one row.
+              Everything else is an override and lives under Options — a
+              roll happens dozens of times a session and shouldn't mean
+              scrolling past five full-width selects to reach the button. */}
+          <div className="roll-fields">
+            <label>
+              {skillLabel ?? 'Skill'}
+              <select value={skillName} onChange={(e) => setSkillName(e.target.value)}>
+                {Object.keys(rankPool).map((s) => (
+                  <option key={s} value={s}>
+                    {s} (rank {rankPool[s]})
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Attribute
+              <select value={attribute} onChange={(e) => setAttribute(e.target.value as AttributeName)}>
+                <option value="strength">Strength {hero.attributes.strength}</option>
+                <option value="heart">Heart {hero.attributes.heart}</option>
+                <option value="wits">Wits {hero.attributes.wits}</option>
+              </select>
+            </label>
+            <label>
+              Favour
+              <select value={favourMode} onChange={(e) => setFavourMode(e.target.value as FavourMode)}>
+                <option value="normal">Normal</option>
+                <option value="favoured">Favoured</option>
+                <option value="ill-favoured">Ill-favoured</option>
+              </select>
+            </label>
+          </div>
+
+          <label className="hope-toggle">
             <input type="checkbox" checked={hopeSpent} onChange={(e) => setHopeSpent(e.target.checked)} />
             Spend Hope (+{attributeValue})
           </label>
-          <label>
-            Target number (blank = computed)
-            <input
-              type="number"
-              value={tnOverride}
-              onChange={(e) => setTnOverride(e.target.value)}
-            />
-          </label>
+
+          {weary && <p role="status">Weary — Success dice showing 1–3 will count as zero.</p>}
           {(successDiceDelta ?? 0) !== 0 && (
             <p role="status">
               {(successDiceDelta ?? 0) > 0 ? '+' : ''}
@@ -224,13 +225,21 @@ export function RollPanel({
               circumstances.
             </p>
           )}
-          {weary && <p role="status">Weary — Success dice showing 1–3 will count as zero.</p>}
-          {diceInputMode === 'app-rolls' && (
-            <DiceQualityControl quality={dice3d.quality} onChange={dice3d.changeQuality} />
-          )}
-          <button className="primary big" onClick={beginRoll} disabled={dice3d.rolling}>
+
+          <button className="primary big roll-cta" onClick={beginRoll} disabled={dice3d.rolling}>
             🎲 Roll
           </button>
+
+          <details className="roll-options">
+            <summary>Options</summary>
+            <label>
+              Target number (blank = computed)
+              <input type="number" value={tnOverride} onChange={(e) => setTnOverride(e.target.value)} />
+            </label>
+            {diceInputMode === 'app-rolls' && (
+              <DiceQualityControl quality={dice3d.quality} onChange={dice3d.changeQuality} />
+            )}
+          </details>
         </>
       )}
 
@@ -265,19 +274,73 @@ export function RollPanel({
       )}
 
       {phase.kind === 'resolved' && (
-        <div>
-          <p>
-            <strong>{phase.result.success ? 'Success' : 'Failure'}</strong>
-            {phase.result.success && phase.result.degreeOfSuccess !== 'success' &&
-              ` (${phase.result.degreeOfSuccess})`}
-            {' — total '}
-            {phase.result.total} vs TN {phase.result.targetNumber}
-          </p>
-          {phase.result.rune && <p>Gandalf rune — automatic success.</p>}
-          {phase.result.eye && <p>Eye of Sauron — flagged for narrative consequence.</p>}
-          <button onClick={reset}>Roll again</button>
-        </div>
+        <RollResult result={phase.result} skillName={phase.skillName} dicePack={dicePack} onReset={reset} />
       )}
     </section>
+  );
+}
+
+const DEGREE_LABEL: Record<string, string> = {
+  success: 'Success',
+  great: 'Great success',
+  extraordinary: 'Extraordinary success',
+};
+
+/**
+ * The result of a roll is the thing a player sees more than any other
+ * screen in the app, so it gets the weight: the dice that produced it,
+ * the verdict, and the arithmetic — in that order of prominence. The old
+ * version was one sentence of prose, which made the app's central moment
+ * feel like a status bar.
+ */
+function RollResult({
+  result,
+  skillName,
+  dicePack,
+  onReset,
+}: {
+  result: SkillRollResult;
+  skillName: string;
+  dicePack: DicePack | null;
+  onReset: () => void;
+}) {
+  const verdict = result.success ? DEGREE_LABEL[result.degreeOfSuccess] ?? 'Success' : 'Failure';
+  const featLabel =
+    result.featDieUsed === 'eye' ? 'Eye' : result.featDieUsed === 'rune' ? 'Rune' : String(result.featDieUsed);
+  const featArt = faceArt(dicePack, featFaceKey(result.featDieUsed));
+
+  return (
+    <div className={`roll-result ${result.success ? 'is-success' : 'is-failure'}`} role="status">
+      <div className="roll-dice">
+        <span className={`die-chip feat${result.rune ? ' rune' : ''}${result.eye ? ' eye' : ''}`}>
+          {featArt && <img src={featArt} alt="" aria-hidden="true" />}
+          <span>{featLabel}</span>
+        </span>
+        {result.successDiceRolled.map((face, i) => {
+          const art = faceArt(dicePack, successFaceKey(face));
+          // Weary turns 1-3 into zeros (F1.15) — show which dice were lost.
+          const negated = result.effectiveSuccessValues[i] === 0;
+          return (
+            <span key={i} className={`die-chip success${negated ? ' negated' : ''}${face === 6 ? ' six' : ''}`}>
+              {art && <img src={art} alt="" aria-hidden="true" />}
+              <span>{face}</span>
+            </span>
+          );
+        })}
+      </div>
+
+      <p className="roll-verdict">{verdict}</p>
+      <p className="roll-math">
+        {skillName} · total {result.total} vs TN {result.targetNumber}
+        {result.sixCount > 0 && ` · ${result.sixCount} ${result.sixCount === 1 ? 'six' : 'sixes'}`}
+      </p>
+
+      {result.rune && <p className="roll-flag good">Gandalf rune — automatic success.</p>}
+      {result.eye && <p className="roll-flag bad">Eye of Sauron — a consequence for the story.</p>}
+
+      <button className="primary" onClick={onReset} autoFocus>
+        Roll again
+      </button>
+    </div>
   );
 }

@@ -750,3 +750,394 @@ legend {
     display: none;
   }
 }
+
+/* ---------- activation: quick start ---------- */
+
+.quickstart {
+  max-width: 34rem;
+  margin: var(--space-6) auto var(--space-5);
+  text-align: left;
+}
+
+.quickstart > label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+  margin-bottom: var(--space-2);
+}
+
+.quickstart-row {
+  display: flex;
+  gap: var(--space-2);
+}
+
+.quickstart-row input {
+  flex: 1;
+  min-height: 3rem;
+  font-size: 1.05rem;
+}
+
+.quickstart-row button {
+  white-space: nowrap;
+}
+
+.quickstart-note {
+  margin: var(--space-3) 0 0;
+  font-size: 0.85rem;
+  color: var(--fg-muted);
+}
+
+.linklike {
+  min-height: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--accent);
+  font: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.linklike:hover {
+  background: none;
+  color: var(--accent-strong);
+}
+
+.welcome-fineprint {
+  margin-top: var(--space-5);
+  font-size: 0.78rem;
+  color: var(--fg-subtle);
+}
+
+/* ---------- the roll result ---------- */
+
+.roll-result {
+  margin-top: var(--space-4);
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border);
+  background: var(--bg-sunken);
+  text-align: center;
+  animation: roll-land 0.28s cubic-bezier(0.2, 0.9, 0.3, 1.3);
+}
+
+@keyframes roll-land {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.98);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roll-result {
+    animation: none;
+  }
+}
+
+.roll-dice {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.die-chip {
+  position: relative;
+  overflow: hidden;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 2.5rem;
+  height: 2.5rem;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-strong);
+  background: var(--bg-elevated);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.die-chip img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.die-chip > span {
+  position: relative;
+  z-index: 1;
+}
+
+.die-chip.feat {
+  min-width: 3.25rem;
+  height: 3.25rem;
+  font-size: 1.25rem;
+  border-color: var(--accent);
+}
+
+.die-chip.rune {
+  border-color: var(--success);
+  color: var(--success);
+}
+
+.die-chip.eye {
+  border-color: var(--danger);
+  color: var(--danger);
+}
+
+.die-chip.six {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.die-chip.negated {
+  opacity: 0.4;
+  text-decoration: line-through;
+}
+
+.roll-verdict {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 1.6rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--fg);
+}
+
+.roll-result.is-success .roll-verdict {
+  color: var(--success);
+}
+
+.roll-result.is-failure .roll-verdict {
+  color: var(--fg-muted);
+}
+
+.roll-math {
+  margin: 2px 0 var(--space-3);
+  font-size: 0.85rem;
+  color: var(--fg-muted);
+}
+
+.roll-flag {
+  margin: 0 0 var(--space-2);
+  font-size: 0.85rem;
+}
+
+.roll-flag.good {
+  color: var(--success);
+}
+
+.roll-flag.bad {
+  color: var(--danger);
+}
+
+/* ---------- hero card ---------- */
+
+.hero-card header {
+  gap: var(--space-2);
+}
+
+.hero-card header h4 {
+  order: -1;
+}
+
+.hero-descriptor {
+  margin: 0 0 var(--space-2);
+  font-size: 0.85rem;
+  color: var(--fg-subtle);
+}
+
+.hero-badges:not(:empty) {
+  margin-bottom: var(--space-2);
+}
+
+button.chip {
+  min-height: 1.9rem;
+  padding: 0 var(--space-2);
+  font-size: 0.75rem;
+  font-weight: 700;
+  border-radius: 999px;
+  color: var(--fg-muted);
+}
+
+button.chip.is-active {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: var(--accent-fg);
+}
+
+button.ghost.icon {
+  min-height: 1.9rem;
+  padding: 0 var(--space-2);
+  border: none;
+  color: var(--fg-subtle);
+}
+
+.gauge {
+  margin-bottom: var(--space-3);
+}
+
+.gauge-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.gauge-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--fg-muted);
+}
+
+.gauge-track {
+  height: 6px;
+  margin: 6px 0 4px;
+  border-radius: 999px;
+  background: var(--bg-sunken);
+  overflow: hidden;
+}
+
+.gauge-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width 0.25s ease;
+}
+
+.gauge.tone-endurance .gauge-fill {
+  background: var(--success);
+}
+
+.gauge.tone-hope .gauge-fill {
+  background: var(--accent);
+}
+
+.gauge-foot {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.stepper {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: var(--fg-muted);
+}
+
+.stepper b {
+  min-width: 1.6rem;
+  text-align: center;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+
+.stepper button {
+  min-height: 1.75rem;
+  min-width: 1.75rem;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  line-height: 1;
+}
+
+.stepper.subtle b {
+  color: var(--fg-muted);
+}
+
+.hero-minor {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px solid var(--border);
+  font-size: 0.78rem;
+}
+
+.toolbar.subtle {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border);
+  font-size: 0.82rem;
+  color: var(--fg-subtle);
+}
+
+.toolbar.subtle label {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: 0.82rem;
+}
+
+.toolbar.subtle select {
+  width: auto;
+  min-height: 2rem;
+}
+
+/* The roll panel is the primary surface on the Company screen. */
+.roll-panel-main {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-md);
+}
+
+/* ---------- roll setup ---------- */
+
+.roll-fields {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: var(--space-2);
+}
+
+@media (max-width: 560px) {
+  .roll-fields {
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+}
+
+.roll-fields label {
+  margin-block: var(--space-2);
+}
+
+.hope-toggle {
+  margin-block: var(--space-2) var(--space-3);
+}
+
+.roll-cta {
+  width: 100%;
+}
+
+.roll-options {
+  margin-top: var(--space-3);
+  border-top: 1px solid var(--border);
+  padding-top: var(--space-2);
+}
+
+.roll-options summary {
+  cursor: pointer;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--fg-subtle);
+  list-style: none;
+}
+
+.roll-options summary::marker,
+.roll-options summary::-webkit-details-marker {
+  display: none;
+}
+
+.roll-options summary::before {
+  content: '▸ ';
+}
+
+.roll-options[open] summary::before {
+  content: '▾ ';
+}

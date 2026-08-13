@@ -45,8 +45,15 @@ test('author a pack, map a face, and see it on the Feat die picker', async ({ pa
   await expect(eye.locator('img')).toHaveCount(1);
   await expect(eye).toContainText('Eye');
 
-  // And the roll still resolves normally through the art.
+  // And the roll still resolves normally through the art. A quick-start
+  // hero has real skill ranks, so player-rolls mode asks for the Success
+  // pool after the Feat die — tap through it.
   await eye.click();
+  for (let i = 0; i < 8; i++) {
+    const die = page.getByRole('button', { name: 'Success die 6' });
+    if (!(await die.isVisible().catch(() => false))) break;
+    await die.click();
+  }
   await expect(page.getByText(/total \d+ vs TN/)).toBeVisible();
 });
 

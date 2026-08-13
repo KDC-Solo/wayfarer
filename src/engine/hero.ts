@@ -50,6 +50,37 @@ export function recoverFromWound(hero: Hero): Hero {
   return { ...hero, wounded: false, woundTreated: false };
 }
 
+/**
+ * A hero you can actually roll with, from just a name.
+ *
+ * `createHero` zeroes everything, which is correct for "I'm copying my
+ * character sheet in" but lethal as a first-run default: with attributes
+ * at 0 the Target Number is 18, and with every skill at rank 0 there are
+ * no Success dice, so the Feat die alone can never reach it. A new player
+ * following the obvious path would watch their first roll fail and have
+ * no idea why. These are ordinary mid-range starting values — a playable
+ * placeholder the player overwrites from their own sheet, exactly like
+ * the table skeletons elsewhere in the app.
+ */
+export function createQuickStartHero(name: string): Hero {
+  const hero = createHero({ name });
+  const skills = { ...hero.skills };
+  for (const skillName of Object.keys(skills)) skills[skillName] = 1;
+  for (const skillName of QUICK_START_FOCUS_SKILLS) {
+    if (skillName in skills) skills[skillName] = 2;
+  }
+  return {
+    ...hero,
+    attributes: { strength: 4, heart: 4, wits: 4 },
+    skills,
+    resources: { ...hero.resources, endurance: 24, hope: 12 },
+  };
+}
+
+/** Arbitrary spread so a quick-start hero isn't uniformly flat — not a
+ * claim about any culture or calling. */
+const QUICK_START_FOCUS_SKILLS = ['Awe', 'Athletics', 'Travel', 'Insight'];
+
 export interface DerivedStates {
   /** F1.15 — Fatigue at or above Endurance. */
   weary: boolean;

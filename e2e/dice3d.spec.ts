@@ -1,5 +1,11 @@
-import { expect, test } from '@playwright/test';
+import { expect, test, type Page } from '@playwright/test';
 import { createHero } from './helpers.ts';
+
+/** 3D is a preference, not part of the roll path, so it lives under the
+ * roll panel's Options disclosure — open it the way a player would. */
+async function openRollOptions(page: Page) {
+  await page.getByText('Options', { exact: true }).click();
+}
 
 // Phase 7's load-bearing guarantee is a negative one: nothing in Phases
 // 1-6 may depend on the 3D module (PRD §6). These run in a real browser,
@@ -8,6 +14,7 @@ import { createHero } from './helpers.ts';
 
 test('rolling works with 3D off — the default, and the fallback path', async ({ page }) => {
   await createHero(page);
+  await openRollOptions(page);
   await expect(page.getByLabel('3D dice')).toHaveValue('off');
 
   await page.getByRole('button', { name: '🎲 Roll' }).click();
@@ -16,6 +23,7 @@ test('rolling works with 3D off — the default, and the fallback path', async (
 
 test('turning 3D on never blocks the roll from resolving (F7.2)', async ({ page }) => {
   await createHero(page);
+  await openRollOptions(page);
 
   await page.getByLabel('3D dice').selectOption('low');
   await page.getByRole('button', { name: '🎲 Roll' }).click();
@@ -28,8 +36,10 @@ test('turning 3D on never blocks the roll from resolving (F7.2)', async ({ page 
 
 test('the quality setting persists across a reload (F7.5)', async ({ page }) => {
   await createHero(page);
+  await openRollOptions(page);
   await page.getByLabel('3D dice').selectOption('high');
   await page.reload();
+  await openRollOptions(page);
   await expect(page.getByLabel('3D dice')).toHaveValue('high');
 });
 
@@ -53,6 +63,7 @@ test('with 3D on, the simulation renders into a stable canvas and always yields 
   // before falling back, and the point is that a result still appears.
   test.setTimeout(90_000);
   await createHero(page);
+  await openRollOptions(page);
   await page.getByLabel('3D dice').selectOption('high');
 
   // Several rolls, because dice-box's physics is not perfectly reliable:
