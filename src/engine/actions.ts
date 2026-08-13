@@ -8,6 +8,7 @@ import { applyWound, recoverFromWound, treatWound } from './hero.ts';
 import { createLogEntry } from './log.ts';
 import { applyResourceDelta, setResourceValue, type ResourceField } from './resources.ts';
 import type { SkillRollResult } from './dice.ts';
+import type { LoreRollResult } from './loreTable.ts';
 import type { TellingTableResult } from './tellingTable.ts';
 import type { OracleTableRow } from './oracleTable.ts';
 import type { Chronicle, DiceInputMode, LogEntry } from './types.ts';
@@ -137,6 +138,25 @@ export function recordTableRoll(
     type: 'oracle',
     inputMode,
     payload: { tableId, tableName, key, row },
+    prose: prose ?? null,
+    journeyId: journeyId ?? null,
+  });
+}
+
+/** The Lore Table's two-die draw (p.11-12) — logged as an oracle entry
+ * like any other table consultation. */
+export function recordLoreRoll(
+  result: LoreRollResult,
+  loreTableId: string,
+  loreTableName: string,
+  inputMode: DiceInputMode,
+  prose?: string,
+  journeyId?: string,
+): LogEntry {
+  return createLogEntry({
+    type: 'oracle',
+    inputMode,
+    payload: { loreTableId, loreTableName, ...result },
     prose: prose ?? null,
     journeyId: journeyId ?? null,
   });

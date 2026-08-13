@@ -5,6 +5,7 @@ import type { StepTemplate } from './stepTemplate.ts';
 import type { Journey, Route } from './journey.ts';
 import type { FellowshipPhase } from './fellowshipPhase.ts';
 import type { Combat } from './combat.ts';
+import type { LoreTable } from './loreTable.ts';
 
 // IndexedDB for chronicle + log + oracle tables + step templates + journeys
 // + routes + Fellowship phases (PRD §9 — volume grows unbounded over a
@@ -12,7 +13,7 @@ import type { Combat } from './combat.ts';
 // database = one campaign; the app does not manage multiple chronicles.
 
 const DB_NAME = 'wayfarer';
-const DB_VERSION = 5;
+const DB_VERSION = 6;
 const CHRONICLE_STORE = 'chronicle';
 const LOG_STORE = 'log';
 const ORACLE_TABLE_STORE = 'oracleTables';
@@ -21,6 +22,7 @@ const JOURNEY_STORE = 'journeys';
 const ROUTE_STORE = 'routes';
 const FELLOWSHIP_PHASE_STORE = 'fellowshipPhases';
 const COMBAT_STORE = 'combats';
+const LORE_TABLE_STORE = 'loreTables';
 const SINGLETON_KEY = 'current';
 
 interface WayfarerDB extends DBSchema {
@@ -57,6 +59,10 @@ interface WayfarerDB extends DBSchema {
     key: string;
     value: Combat;
   };
+  [LORE_TABLE_STORE]: {
+    key: string;
+    value: LoreTable;
+  };
 }
 
 let dbPromise: Promise<IDBPDatabase<WayfarerDB>> | null = null;
@@ -84,6 +90,9 @@ function getDb(): Promise<IDBPDatabase<WayfarerDB>> {
         }
         if (oldVersion < 5) {
           db.createObjectStore(COMBAT_STORE, { keyPath: 'id' });
+        }
+        if (oldVersion < 6) {
+          db.createObjectStore(LORE_TABLE_STORE, { keyPath: 'id' });
         }
       },
     });
@@ -189,6 +198,21 @@ export async function putCombat(combat: Combat): Promise<void> {
   await db.put(COMBAT_STORE, combat);
 }
 
+export async function getAllLoreTables(): Promise<LoreTable[]> {
+  const db = await getDb();
+  return db.getAll(LORE_TABLE_STORE);
+}
+
+export async function putLoreTable(table: LoreTable): Promise<void> {
+  const db = await getDb();
+  await db.put(LORE_TABLE_STORE, table);
+}
+
+export async function deleteLoreTable(id: string): Promise<void> {
+  const db = await getDb();
+  await db.delete(LORE_TABLE_STORE, id);
+}
+
 /** Full local-state reset. Used by tests and by a future "start new campaign" flow. */
 export async function clearAll(): Promise<void> {
   const db = await getDb();
@@ -200,4 +224,5 @@ export async function clearAll(): Promise<void> {
   await db.clear(ROUTE_STORE);
   await db.clear(FELLOWSHIP_PHASE_STORE);
   await db.clear(COMBAT_STORE);
+  await db.clear(LORE_TABLE_STORE);
 }

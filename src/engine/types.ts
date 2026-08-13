@@ -118,7 +118,7 @@ export interface LogEntry {
   sessionId: string | null;
 }
 
-// Bumped for the Phase 5 data model (combat, wounded status, combat-event
-// log entries). Backwards compatible with version-5 data: the new Hero
-// fields are optional and combats simply may be absent from older exports.
-export const SCHEMA_VERSION = 6;
+// Bumped for the Lore Table entity. Backwards compatible with version-5/6
+// data: new Hero fields are optional and combats/loreTables simply may be
+// absent from older exports.
+export const SCHEMA_VERSION = 7;

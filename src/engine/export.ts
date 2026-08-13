@@ -4,6 +4,7 @@ import type { StepTemplate } from './stepTemplate.ts';
 import type { Journey, Route } from './journey.ts';
 import type { FellowshipPhase } from './fellowshipPhase.ts';
 import type { Combat } from './combat.ts';
+import type { LoreTable } from './loreTable.ts';
 import {
   appendLogEntry,
   clearAll,
@@ -11,6 +12,7 @@ import {
   getAllFellowshipPhases,
   getAllJourneys,
   getAllLogEntries,
+  getAllLoreTables,
   getAllOracleTables,
   getAllRoutes,
   getAllStepTemplates,
@@ -19,6 +21,7 @@ import {
   putCombat,
   putFellowshipPhase,
   putJourney,
+  putLoreTable,
   putOracleTable,
   putRoute,
   putStepTemplate,
@@ -41,6 +44,7 @@ export interface StateEnvelope {
   routes: Route[];
   fellowshipPhases: FellowshipPhase[];
   combats: Combat[];
+  loreTables: LoreTable[];
 }
 
 export class ImportError extends Error {}
@@ -48,15 +52,17 @@ export class ImportError extends Error {}
 export async function exportState(): Promise<StateEnvelope> {
   const chronicle = await getChronicle();
   if (!chronicle) throw new Error('No chronicle to export — nothing has been created yet.');
-  const [log, oracleTables, stepTemplates, journeys, routes, fellowshipPhases, combats] = await Promise.all([
-    getAllLogEntries(),
-    getAllOracleTables(),
-    getAllStepTemplates(),
-    getAllJourneys(),
-    getAllRoutes(),
-    getAllFellowshipPhases(),
-    getAllCombats(),
-  ]);
+  const [log, oracleTables, stepTemplates, journeys, routes, fellowshipPhases, combats, loreTables] =
+    await Promise.all([
+      getAllLogEntries(),
+      getAllOracleTables(),
+      getAllStepTemplates(),
+      getAllJourneys(),
+      getAllRoutes(),
+      getAllFellowshipPhases(),
+      getAllCombats(),
+      getAllLoreTables(),
+    ]);
   return {
     format: 'wayfarer-export',
     schemaVersion: SCHEMA_VERSION,
@@ -69,6 +75,7 @@ export async function exportState(): Promise<StateEnvelope> {
     routes,
     fellowshipPhases,
     combats,
+    loreTables,
   };
 }
 
@@ -127,5 +134,8 @@ export async function importState(json: string): Promise<void> {
   }
   for (const combat of envelope.combats ?? []) {
     await putCombat(combat);
+  }
+  for (const loreTable of envelope.loreTables ?? []) {
+    await putLoreTable(loreTable);
   }
 }

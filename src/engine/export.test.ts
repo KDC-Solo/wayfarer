@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createChronicle } from './chronicle.ts';
+import { createLoreTable, updateLoreCell } from './loreTable.ts';
 import { addAdversary, createAdversary, createCombat } from './combat.ts';
 import { createFellowshipPhase } from './fellowshipPhase.ts';
 import { createJourney, saveAsRoute } from './journey.ts';
@@ -13,6 +14,7 @@ import {
   getAllFellowshipPhases,
   getAllJourneys,
   getAllLogEntries,
+  getAllLoreTables,
   getAllOracleTables,
   getAllRoutes,
   getAllStepTemplates,
@@ -21,6 +23,7 @@ import {
   putCombat,
   putFellowshipPhase,
   putJourney,
+  putLoreTable,
   putOracleTable,
   putRoute,
   putStepTemplate,
@@ -52,7 +55,8 @@ function seedJourneyContent() {
     createCombat({ name: 'Ambush', stepTemplateId: template.id, heroIds: ['h1'], openingVolleys: 1 }),
     createAdversary({ name: 'Orc', endurance: 12, hate: 2 }),
   );
-  return { table, template, journey, route, fellowshipPhase, combat };
+  const loreTable = updateLoreCell(createLoreTable(), '4', 2, 'focus', 'Journey');
+  return { table, template, journey, route, fellowshipPhase, combat, loreTable };
 }
 
 describe('exportState', () => {
@@ -65,13 +69,14 @@ describe('exportState', () => {
     await putChronicle(chronicle);
     const entry = createLogEntry({ type: 'system' });
     await appendLogEntry(entry);
-    const { table, template, journey, route, fellowshipPhase, combat } = seedJourneyContent();
+    const { table, template, journey, route, fellowshipPhase, combat, loreTable } = seedJourneyContent();
     await putOracleTable(table);
     await putStepTemplate(template);
     await putJourney(journey);
     await putRoute(route);
     await putFellowshipPhase(fellowshipPhase);
     await putCombat(combat);
+    await putLoreTable(loreTable);
 
     const envelope = await exportState();
     expect(envelope.format).toBe('wayfarer-export');
@@ -83,6 +88,7 @@ describe('exportState', () => {
     expect(envelope.routes).toEqual([route]);
     expect(envelope.fellowshipPhases).toEqual([fellowshipPhase]);
     expect(envelope.combats).toEqual([combat]);
+    expect(envelope.loreTables).toEqual([loreTable]);
   });
 });
 
@@ -110,13 +116,14 @@ describe('export/import round trip', () => {
       createLogEntry({ type: 'prose', prose: 'The road goes ever on.' }),
     ];
     for (const e of entries) await appendLogEntry(e);
-    const { table, template, journey, route, fellowshipPhase, combat } = seedJourneyContent();
+    const { table, template, journey, route, fellowshipPhase, combat, loreTable } = seedJourneyContent();
     await putOracleTable(table);
     await putStepTemplate(template);
     await putJourney(journey);
     await putRoute(route);
     await putFellowshipPhase(fellowshipPhase);
     await putCombat(combat);
+    await putLoreTable(loreTable);
 
     const json = serializeState(await exportState());
 
@@ -134,6 +141,7 @@ describe('export/import round trip', () => {
     expect(await getAllRoutes()).toEqual([route]);
     expect(await getAllFellowshipPhases()).toEqual([fellowshipPhase]);
     expect(await getAllCombats()).toEqual([combat]);
+    expect(await getAllLoreTables()).toEqual([loreTable]);
   });
 
   it('replaces existing state rather than merging with it', async () => {

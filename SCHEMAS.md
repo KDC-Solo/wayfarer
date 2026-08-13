@@ -1,6 +1,6 @@
 # Wayfarer content schemas
 
-**Contract version: 6** (matches `schemaVersion` in exports; source of truth: `src/engine/types.ts`)
+**Contract version: 7** (matches `schemaVersion` in exports; source of truth: `src/engine/types.ts`)
 
 This document is the stable public contract PRD requirement **C4** promises: everything a
 third party needs to author content packs — oracle tables, step templates, or full state
@@ -48,6 +48,29 @@ Plain text, UTF-8, one result per line. Two shapes, per table:
 
 Auto-detection uses *keyed* only when every line parses as keyed.
 
+## Lore table
+
+The Lore Table (two-die oracle: Feat die section, Success die row, three columns) is its
+own entity, not an oracle-table variant:
+
+```jsonc
+{
+  "id": "any-unique-string",
+  "name": "Lore Table",
+  "sourceReference": "Strider Mode p.11-12",
+  "sections": {
+    // Keys: "eye", "1" … "10", "rune" — always all 12, each exactly 6 rows.
+    "1": [
+      { "action": "", "aspect": "", "focus": "" }
+      // … 5 more rows
+    ]
+    // … 11 more sections
+  }
+}
+```
+
+All 216 cells ship empty (C2); users transcribe their own copy in the editor.
+
 ## Step template
 
 ```jsonc
@@ -90,7 +113,8 @@ The Export button writes one JSON document:
   "journeys": [],
   "routes": [],
   "fellowshipPhases": [],
-  "combats": []                     // absent in pre-6 exports; readers default to []
+  "combats": [],                    // absent in pre-6 exports; readers default to []
+  "loreTables": []                  // absent in pre-7 exports; readers default to []
 }
 ```
 

@@ -3,6 +3,7 @@ import { addHero, getActiveHero, removeHero, setActiveHero } from './engine/comp
 import { advanceYear, createChronicle, currentSessionId, setDiceInputMode, startSession } from './engine/chronicle.ts';
 import {
   changeResource,
+  recordLoreRoll,
   recordOracleAnswer,
   recordSkillRoll,
   recordTableRoll,
@@ -10,6 +11,7 @@ import {
 } from './engine/actions.ts';
 import { createFellowshipPhase, type FellowshipPhase } from './engine/fellowshipPhase.ts';
 import type { Combat } from './engine/combat.ts';
+import { createLoreTable, type LoreRollResult, type LoreTable } from './engine/loreTable.ts';
 import { createLogEntry } from './engine/log.ts';
 import {
   appendLogEntry,
@@ -19,6 +21,7 @@ import {
   getAllFellowshipPhases,
   getAllJourneys,
   getAllLogEntries,
+  getAllLoreTables,
   getAllOracleTables,
   getAllRoutes,
   getAllStepTemplates,
@@ -27,6 +30,7 @@ import {
   putCombat,
   putFellowshipPhase,
   putJourney,
+  putLoreTable,
   putOracleTable,
   putRoute,
   putStepTemplate,
@@ -57,17 +61,20 @@ import { FellowshipRunner } from './ui/FellowshipRunner.tsx';
 import { CombatPlanner } from './ui/CombatPlanner.tsx';
 import { CombatRunner } from './ui/CombatRunner.tsx';
 import { ChroniclePanel } from './ui/ChroniclePanel.tsx';
+import { LorePanel } from './ui/LorePanel.tsx';
 import { Nav, type TabId } from './ui/Nav.tsx';
 import { BrandMark } from './ui/BrandMark.tsx';
 import { Welcome } from './ui/Welcome.tsx';
 
 const COMBAT_TEMPLATE_SEEDED_KEY = 'wayfarer.seeded.combat-template';
+const LORE_TABLE_SEEDED_KEY = 'wayfarer.seeded.lore-table';
 
 export default function App() {
   const [tab, setTab] = useState<TabId>('company');
   const [chronicle, setChronicle] = useState<Chronicle | null>(null);
   const [log, setLog] = useState<LogEntry[]>([]);
   const [oracleTables, setOracleTables] = useState<OracleTable[]>([]);
+  const [loreTables, setLoreTables] = useState<LoreTable[]>([]);
   const [stepTemplates, setStepTemplates] = useState<StepTemplate[]>([]);
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
@@ -112,6 +119,17 @@ export default function App() {
     localStorage.setItem(COMBAT_TEMPLATE_SEEDED_KEY, '1');
     setOracleTables(tables);
     setStepTemplates(templates);
+
+    // Same upgrade-seed pattern as the combat template: the Lore Table
+    // skeleton appears once for campaigns that predate it.
+    let loadedLoreTables = await getAllLoreTables();
+    if (loadedLoreTables.length === 0 && !localStorage.getItem(LORE_TABLE_SEEDED_KEY)) {
+      const loreTable = createLoreTable();
+      await putLoreTable(loreTable);
+      loadedLoreTables = [loreTable];
+    }
+    localStorage.setItem(LORE_TABLE_SEEDED_KEY, '1');
+    setLoreTables(loadedLoreTables);
 
     const loadedJourneys = await getAllJourneys();
     setJourneys(loadedJourneys);
@@ -238,6 +256,23 @@ export default function App() {
       params.tableName,
       params.key,
       { text: params.text },
+      chronicle.diceInputMode,
+      params.prose || undefined,
+    );
+    await persist(chronicle, entry);
+  }
+
+  async function handleUpdateLoreTable(table: LoreTable) {
+    await putLoreTable(table);
+    setLoreTables((t) => t.map((existing) => (existing.id === table.id ? table : existing)));
+  }
+
+  async function handleLoreRollLog(params: { table: LoreTable; result: LoreRollResult; prose: string }) {
+    if (!chronicle) return;
+    const entry = recordLoreRoll(
+      params.result,
+      params.table.id,
+      params.table.name,
       chronicle.diceInputMode,
       params.prose || undefined,
     );
@@ -505,6 +540,7 @@ export default function App() {
                   <p>Ask a yes/no question, or roll on any table — yours or the shipped skeletons.</p>
                 </div>
                 <OraclePanel diceInputMode={chronicle.diceInputMode} onLog={handleOracleLog} />
+                <LorePanel loreTables={loreTables} onUpdate={handleUpdateLoreTable} onLog={handleLoreRollLog} />
                 <TableRoller tables={oracleTables} onLog={handleTableRollLog} />
                 <TableEditor
                   tables={oracleTables}

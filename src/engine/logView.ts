@@ -68,6 +68,13 @@ export function describeLogEntry(entry: LogEntry, ctx: LogRenderContext): string
     }
 
     case 'oracle': {
+      if (typeof p.loreTableName === 'string') {
+        const results = (p.results ?? {}) as Record<string, string>;
+        const parts = Object.entries(results).map(
+          ([column, text]) => `${column}: ${text.trim() || '(blank)'}`,
+        );
+        return `${p.loreTableName} (${String(p.featFace)}/${String(p.successDie)}) — ${parts.join(', ') || 'no columns'}`;
+      }
       if (typeof p.tableName === 'string') {
         const row = p.row as { text?: string } | null | undefined;
         const text = row?.text?.trim();
