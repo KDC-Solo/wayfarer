@@ -7,6 +7,11 @@ export interface Waypoint {
   distance: number;
   /** Free text (F3.1) — terrain taxonomy is core-rulebook content, not hardcoded. */
   terrain: string;
+  /** Strider Mode p.17 (verified): an event "in a hex suggesting a hard
+   * terrain" loses (1d) on its skill roll; one "along a road" gains (1d).
+   * Which hexes qualify is the player's map-reading, hence a manual flag
+   * distinct from the free-text terrain description. */
+  terrainModifier?: 'hard' | 'road';
   /** Strider Mode p.17: the Solo Journey Events roll is Favoured in a
    * Border Land, plain in a Wild Land, Ill-favoured in a Dark Land. */
   landDanger?: 'border' | 'wild' | 'dark';

@@ -9,6 +9,7 @@ import {
   completeStep,
   currentStep,
   favourModeForLandDanger,
+  successDiceDeltaForTerrain,
   resolveRoleHero,
 } from './journeyEngine.ts';
 
@@ -136,5 +137,13 @@ describe('favourModeForLandDanger (Strider Mode p.17)', () => {
     expect(favourModeForLandDanger('wild')).toBe('normal');
     expect(favourModeForLandDanger('dark')).toBe('ill-favoured');
     expect(favourModeForLandDanger(undefined)).toBe('normal');
+  });
+});
+
+describe('successDiceDeltaForTerrain (Strider Mode p.17)', () => {
+  it('hard terrain loses a die, a road gains one, unset is neutral', () => {
+    expect(successDiceDeltaForTerrain('hard')).toBe(-1);
+    expect(successDiceDeltaForTerrain('road')).toBe(1);
+    expect(successDiceDeltaForTerrain(undefined)).toBe(0);
   });
 });

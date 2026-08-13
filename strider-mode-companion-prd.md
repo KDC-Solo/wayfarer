@@ -1,7 +1,7 @@
 # Product Requirements Document
 ## Strider Mode Companion — a solo play assistant for The One Ring 2e
 
-**Version:** 1.6 (development baseline)
+**Version:** 1.7 (development baseline)
 **Status:** Approved for development
 **Last updated:** 13 August 2026
 
@@ -14,6 +14,8 @@
 **Changes since 1.2:** F3.5 clarified — roles are skipped entirely (not just de-emphasised) for a company of one, confirmed directly in Strider Mode rather than inferred from the general solo-adjustment pattern (D11). No numeric journey-procedure values (leg length, Fatigue accrual, roll frequency) were added to F3.3, since those live in the core rulebook, which isn't on file — see D12.
 
 **Changes since 1.3:** F4.3 clarified with the verified "Spiritual Recovery" three-tier mechanic (p.20). F4.4 clarified — "experience" is two separate currencies (Adventure Points, Skill Points), not one generic pool (D13); the app validates spend against whichever pool the player selects rather than assuming which currency pays for which advancement. D14 records why the Fellowship Phase reuses the step-template *interpreter* rather than the `Journey` entity itself.
+
+**Changes since 1.6:** C3(b) delivered — bulk paste/file import for table rows, with the line format (keyed ranges or fill-in-order) documented publicly; C4 delivered as `SCHEMAS.md` in the repository, covering oracle tables, step templates, the bulk-import format, and the export envelope (dice packs remain reserved for Phase 7). The verified p.17 hard-terrain (−1d) / road (+1d) event-roll modifier is now encoded via an optional per-waypoint flag, extending D12's verified-and-encoded list. No IDs added or renumbered.
 
 **Changes since 1.5:** F6.1 clarified with the session model — sessions are boundaries in the log (a start marker appended to the chronicle's session list; every subsequent entry is stamped with the current session id), not an entity with its own store, and there is no explicit "end session" (D17). F6.2/F6.3 implemented as written; F6.4 had already shipped in Milestone 0 and needed no change.
 

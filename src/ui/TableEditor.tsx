@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   addRow,
   createOracleTable,
@@ -8,6 +8,7 @@ import {
   type OracleTable,
   type OracleTableRow,
 } from '../engine/oracleTable.ts';
+import { applyBulkRows, type BulkImportMode } from '../engine/tableImport.ts';
 
 interface Props {
   tables: OracleTable[];
@@ -16,9 +17,9 @@ interface Props {
   onDelete: (id: string) => void;
 }
 
-// F2.5 — define new tables and edit their rows without leaving the app.
-// Row population is direct in-app editing only (C3's other path, bulk
-// paste/file import, isn't built yet — see CLAUDE.md).
+// F2.5/C3 — define new tables and edit their rows without leaving the
+// app, via both population paths: direct in-app row editing and bulk
+// paste/file import (BulkImportPanel; format documented in SCHEMAS.md).
 
 export function TableEditor({ tables, onCreate, onUpdate, onDelete }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
@@ -142,6 +143,8 @@ function RowEditor({
         </tbody>
       </table>
 
+      <BulkImportPanel table={table} onChange={onChange} />
+
       <form onSubmit={addNewRow}>
         <label>
           Min
@@ -162,5 +165,78 @@ function RowEditor({
         <button type="submit">Add row</button>
       </form>
     </div>
+  );
+}
+
+/** C3(b) — the bulk population path: paste (or load a text file), one
+ * result per line. Applying goes through applyBulkRows (tableImport.ts);
+ * this panel only collects the text and shows what happened. */
+function BulkImportPanel({ table, onChange }: { table: OracleTable; onChange: (table: OracleTable) => void }) {
+  const [text, setText] = useState('');
+  const [mode, setMode] = useState<BulkImportMode>('auto');
+  const [summary, setSummary] = useState<string | null>(null);
+  const [errors, setErrors] = useState<string[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  function apply() {
+    const result = applyBulkRows(table, text, mode);
+    setErrors(result.errors);
+    if (result.applied > 0) {
+      onChange(result.table);
+      setSummary(
+        result.mode === 'keyed'
+          ? `Applied ${result.applied} keyed ${result.applied === 1 ? 'line' : 'lines'}.`
+          : `Filled ${result.applied} ${result.applied === 1 ? 'row' : 'rows'} in order.`,
+      );
+      setText('');
+    } else {
+      setSummary(null);
+    }
+  }
+
+  async function loadFile(file: File) {
+    setText(await file.text());
+  }
+
+  return (
+    <fieldset>
+      <legend>Bulk import</legend>
+      <p>
+        One result per line. Start lines with their range ("1-3 A grey rider", "eye Nothing stirs") to match or
+        add rows, or paste bare text to fill the existing rows in order.
+      </p>
+      <textarea rows={5} value={text} onChange={(e) => setText(e.target.value)} />
+      <label>
+        Lines are
+        <select value={mode} onChange={(e) => setMode(e.target.value as BulkImportMode)}>
+          <option value="auto">Detect automatically</option>
+          <option value="keyed">Range + text</option>
+          <option value="fill">Text only, fill rows in order</option>
+        </select>
+      </label>
+      <button onClick={apply} disabled={!text.trim()}>
+        Apply to table
+      </button>{' '}
+      <button className="ghost" onClick={() => fileInputRef.current?.click()}>
+        Load from file…
+      </button>
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".txt,.csv,.md,text/plain"
+        hidden
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) loadFile(file);
+          e.target.value = '';
+        }}
+      />
+      {summary && <p role="status">{summary}</p>}
+      {errors.map((err, i) => (
+        <p key={i} role="status">
+          {err}
+        </p>
+      ))}
+    </fieldset>
   );
 }

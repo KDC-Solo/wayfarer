@@ -10,7 +10,14 @@ import {
   type Journey,
   type Route,
 } from '../engine/journey.ts';
-import { completeLeg, completeStep, currentStep, favourModeForLandDanger, resolveRoleHero } from '../engine/journeyEngine.ts';
+import {
+  completeLeg,
+  completeStep,
+  currentStep,
+  favourModeForLandDanger,
+  resolveRoleHero,
+  successDiceDeltaForTerrain,
+} from '../engine/journeyEngine.ts';
 import type { JourneyRole, StepTemplate, StepTemplateStep } from '../engine/stepTemplate.ts';
 import type { Chronicle, LogEntry } from '../engine/types.ts';
 import { RollPanel } from './RollPanel.tsx';
@@ -195,6 +202,7 @@ function StepUI({
         diceInputMode={chronicle.diceInputMode}
         initialSkillName={step.skillName}
         initialFavourMode={favourModeForLandDanger(waypoint.landDanger)}
+        successDiceDelta={successDiceDeltaForTerrain(waypoint.terrainModifier)}
         onResolved={({ skillName, result, inputMode }) => {
           const entry = recordSkillRoll(hero.id, skillName, result, inputMode, journey.id);
           const updated = completeStep(journey, result.success ? 'success' : 'failure');

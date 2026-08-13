@@ -96,6 +96,18 @@ export function JourneyPlanner({ company, stepTemplates, routes, onBegin }: Prop
               <option value="wild">Wild Land</option>
               <option value="dark">Dark Land</option>
             </select>
+            <select
+              value={wp.terrainModifier ?? ''}
+              onChange={(e) =>
+                updateWaypoint(i, {
+                  terrainModifier: (e.target.value || undefined) as Waypoint['terrainModifier'],
+                })
+              }
+            >
+              <option value="">No terrain modifier</option>
+              <option value="hard">Hard terrain (−1 die)</option>
+              <option value="road">Road (+1 die)</option>
+            </select>
             <button onClick={() => removeWaypoint(i)} aria-label={`Remove waypoint ${i}`}>
               ✕
             </button>

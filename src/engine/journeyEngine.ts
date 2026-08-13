@@ -61,3 +61,15 @@ export function favourModeForLandDanger(landDanger: Waypoint['landDanger']): Fav
   if (landDanger === 'dark') return 'ill-favoured';
   return 'normal';
 }
+
+/**
+ * Strider Mode p.17 — the journey event's skill roll loses (1d) in hard
+ * terrain and gains (1d) along a road. Feeds RollPanel's successDiceDelta
+ * (the same plumbing the Skirmish stance uses); still overridable at the
+ * roll like everything else (N7).
+ */
+export function successDiceDeltaForTerrain(modifier: Waypoint['terrainModifier']): number {
+  if (modifier === 'hard') return -1;
+  if (modifier === 'road') return 1;
+  return 0;
+}
