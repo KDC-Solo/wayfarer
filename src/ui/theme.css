@@ -1141,3 +1141,27 @@ button.ghost.icon {
 .roll-options[open] summary::before {
   content: '▾ ';
 }
+
+/* ---------- fill-as-you-play lookups ---------- */
+
+.lookup {
+  padding: var(--space-3);
+  border-radius: var(--radius-md);
+  border: 1px dashed var(--border-strong);
+  background: var(--bg-sunken);
+}
+
+.lookup-cue {
+  margin: 0 0 var(--space-2);
+  color: var(--fg);
+}
+
+.lookup-cue strong {
+  color: var(--accent);
+}
+
+.table-result {
+  font-family: var(--font-serif);
+  font-size: 1.1rem;
+  color: var(--fg);
+}

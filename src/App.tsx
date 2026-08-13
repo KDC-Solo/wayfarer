@@ -589,7 +589,11 @@ export default function App() {
                 </div>
                 <OraclePanel diceInputMode={chronicle.diceInputMode} onLog={handleOracleLog} />
                 <LorePanel loreTables={loreTables} onUpdate={handleUpdateLoreTable} onLog={handleLoreRollLog} />
-                <TableRoller tables={oracleTables} onLog={handleTableRollLog} />
+                <TableRoller
+                  tables={oracleTables}
+                  onLog={handleTableRollLog}
+                  onUpdateTable={handleUpdateTable}
+                />
                 <TableEditor
                   tables={oracleTables}
                   onCreate={handleCreateTable}

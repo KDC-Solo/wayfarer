@@ -138,6 +138,76 @@ export function consultLoreTable(
   };
 }
 
+/**
+ * Fills a whole section (6 rows × 3 columns) from pasted text — the way
+ * anyone sane transcribes a table they own: select the section in the
+ * PDF, copy, paste. Accepts tab, pipe, or run-of-spaces separated
+ * columns, with or without a leading row number, because that is what
+ * actually comes out of a PDF selection.
+ *
+ * Returns the rows it understood plus per-line problems; the caller
+ * decides whether to apply. Lines are matched to rows by their leading
+ * number when present, otherwise by order.
+ */
+export function parseLoreSection(input: string): {
+  rows: LoreRow[];
+  errors: string[];
+  notes: string[];
+} {
+  const lines = input
+    .split('\n')
+    .map((l) => l.trim())
+    .filter((l) => l !== '');
+
+  const rows: LoreRow[] = Array.from({ length: 6 }, () => ({ action: '', aspect: '', focus: '' }));
+  const errors: string[] = [];
+  const notes: string[] = [];
+  let cursor = 0;
+  let trimmedNeighbour = false;
+
+  for (const [i, line] of lines.entries()) {
+    // Split on tab, pipe, or two-or-more spaces — single spaces are kept
+    // because a cell can legitimately be more than one word.
+    const leading = /^(\d{1,2})[\s.):|]+(.*)$/.exec(line);
+    const index = leading ? Number(leading[1]) - 1 : cursor;
+    const body = leading ? leading[2] : line;
+    let cells = body
+      .split(/\t|\s*\|\s*|\s{2,}/)
+      .map((c) => c.trim())
+      .filter((c) => c !== '');
+
+    // The book prints two sections side by side, so selecting a band of
+    // rows in a PDF yields both at once: "1 a b c  2 d e f". A bare row
+    // number after the third column marks where the neighbour starts.
+    const neighbour = cells.findIndex((c, ci) => ci >= 3 && /^\d{1,2}$/.test(c));
+    if (neighbour !== -1) {
+      cells = cells.slice(0, neighbour).slice(0, 3);
+      trimmedNeighbour = true;
+    }
+
+    if (index < 0 || index > 5) {
+      errors.push(`Line ${i + 1}: row ${index + 1} is outside this section's six rows.`);
+      continue;
+    }
+    if (cells.length === 0) continue;
+    if (cells.length > 3) {
+      errors.push(`Line ${i + 1}: found ${cells.length} columns, expected up to 3 (Action, Aspect, Focus).`);
+      continue;
+    }
+    rows[index] = { action: cells[0] ?? '', aspect: cells[1] ?? '', focus: cells[2] ?? '' };
+    cursor = index + 1;
+  }
+
+  if (trimmedNeighbour) {
+    notes.push('Kept the left-hand section — the paste also contained the section printed beside it.');
+  }
+  return { rows, errors, notes };
+}
+
+export function setLoreSection(table: LoreTable, section: LoreSectionKey, rows: LoreRow[]): LoreTable {
+  return { ...table, sections: { ...table.sections, [section]: rows } };
+}
+
 /** Rolls the two dice and consults. Like generic table rolls (TableRoller),
  * this auto-rolls rather than honouring the dice input mode — the same
  * deliberate scope cut, documented in CLAUDE.md. */

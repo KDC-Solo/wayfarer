@@ -4,6 +4,8 @@ import {
   createLoreTable,
   isLoreTableEmpty,
   LORE_SECTION_KEYS,
+  parseLoreSection,
+  setLoreSection,
   rollOnLoreTable,
   sectionKeyForFeatFace,
   updateLoreCell,
@@ -70,5 +72,74 @@ describe('rollOnLoreTable', () => {
       expect(result.successDie).toBeLessThanOrEqual(6);
       expect(result.needsManualResult).toBe(true); // skeleton is empty
     }
+  });
+});
+
+describe('parseLoreSection (transcribing by paste, not by typing 216 cells)', () => {
+  it('accepts the column-aligned shape a PDF selection produces', () => {
+    // Runs of spaces, leading row numbers — what you get selecting a
+    // section in a PDF reader and hitting copy.
+    const { rows, errors } = parseLoreSection(
+      [
+        '1   Abandon    Corrupted     Curse',
+        '2   Attack     Cruel         Despair',
+        '3   Betray     Deceptive     Enemy',
+      ].join('\n'),
+    );
+    expect(errors).toEqual([]);
+    expect(rows[0]).toEqual({ action: 'Abandon', aspect: 'Corrupted', focus: 'Curse' });
+    expect(rows[2]).toEqual({ action: 'Betray', aspect: 'Deceptive', focus: 'Enemy' });
+    expect(rows[3]).toEqual({ action: '', aspect: '', focus: '' });
+  });
+
+  it('accepts tabs and pipes, and rows without leading numbers', () => {
+    const tabbed = parseLoreSection('Aid\tActive\tBattle\nArrive\tAncient\tBorder');
+    expect(tabbed.rows[0]).toEqual({ action: 'Aid', aspect: 'Active', focus: 'Battle' });
+    expect(tabbed.rows[1].focus).toBe('Border');
+
+    const piped = parseLoreSection('1 | Aid | Active | Battle');
+    expect(piped.rows[0]).toEqual({ action: 'Aid', aspect: 'Active', focus: 'Battle' });
+  });
+
+  it('keeps multi-word cells intact — single spaces are not column breaks', () => {
+    const { rows } = parseLoreSection('1  Gain Ground   Far-reaching   The Long Road');
+    expect(rows[0]).toEqual({ action: 'Gain Ground', aspect: 'Far-reaching', focus: 'The Long Road' });
+  });
+
+  it('tolerates a partial paste — one or two columns fill what they can', () => {
+    const { rows, errors } = parseLoreSection('1  Abandon\n2  Attack');
+    expect(errors).toEqual([]);
+    expect(rows[0]).toEqual({ action: 'Abandon', aspect: '', focus: '' });
+  });
+
+  it('handles the two-sections-side-by-side shape a real page paste produces', () => {
+    // The book prints two sections next to each other, so selecting a
+    // band of rows yields both: "1 a b c   2 d e f". Verified against the
+    // real PDF's extracted layout; synthetic words here so no licensed
+    // text lands in the repo.
+    const { rows, errors, notes } = parseLoreSection(
+      ['1   Alpha   Bravo   Charlie      1   Delta   Echo   Foxtrot',
+       '2   Golf    Hotel   India        2   Juliet  Kilo   Lima'].join('\n'),
+    );
+    expect(errors).toEqual([]);
+    expect(notes[0]).toContain('left-hand section');
+    expect(rows[0]).toEqual({ action: 'Alpha', aspect: 'Bravo', focus: 'Charlie' });
+    expect(rows[1]).toEqual({ action: 'Golf', aspect: 'Hotel', focus: 'India' });
+  });
+
+  it('reports rather than silently mangles out-of-range rows and extra columns', () => {
+    const outOfRange = parseLoreSection('9  Nope  Nope  Nope');
+    expect(outOfRange.errors[0]).toContain('outside');
+
+    const tooMany = parseLoreSection('1  a  b  c  d');
+    expect(tooMany.errors[0]).toContain('expected up to 3');
+  });
+
+  it('setLoreSection replaces exactly one section', () => {
+    const table = createLoreTable();
+    const { rows } = parseLoreSection('1  Aid  Active  Battle');
+    const next = setLoreSection(table, '5', rows);
+    expect(next.sections['5'][0].action).toBe('Aid');
+    expect(next.sections['4'][0].action).toBe('');
   });
 });

@@ -1,11 +1,22 @@
 import { useState } from 'react';
 import type { FeatDieFace } from '../engine/dice.ts';
 import { rollDiceExpression } from '../engine/diceExpression.ts';
-import { rollOnTable, type OracleTable } from '../engine/oracleTable.ts';
+import {
+  describeRowKey,
+  matchRow,
+  rollOnTable,
+  setRowTextForKey,
+  type OracleTable,
+} from '../engine/oracleTable.ts';
 import { FeatDiePicker } from './DicePickers.tsx';
 
 interface Props {
   tables: OracleTable[];
+  /** Lets a result typed from the player's own book be kept in the table
+   * (F2.5/C3) — the table fills up through play instead of demanding a
+   * transcription session before the app is useful. Optional so callers
+   * that only roll (the journey/combat runners) need not supply it. */
+  onUpdateTable?: (table: OracleTable) => void;
   onLog: (params: {
     tableId: string;
     tableName: string;
@@ -15,10 +26,16 @@ interface Props {
   }) => void;
 }
 
-// F2.4/F2.6 — roll on any user-defined table by name; an empty table (or an
-// unpopulated row) prompts for a manual result instead of blocking play.
+// F2.4/F2.6 — roll on any user-defined table by name; an empty table (or
+// an unpopulated row) points the player at the right line in their own
+// book and offers to keep the answer, rather than just refusing to help.
 
-export function TableRoller({ tables, onLog }: Props) {
+function describeRowLabel(table: OracleTable, key: number | 'eye' | 'rune'): string {
+  const row = matchRow(table, key);
+  return (row && describeRowKey(row)) || String(key);
+}
+
+export function TableRoller({ tables, onLog, onUpdateTable }: Props) {
   const [tableId, setTableId] = useState(tables[0]?.id ?? '');
   const table = tables.find((t) => t.id === tableId) ?? null;
   const usesFeatDie = table?.rows.some((r) => r.featFace !== undefined) ?? false;
@@ -28,6 +45,7 @@ export function TableRoller({ tables, onLog }: Props) {
   const [manualText, setManualText] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [prose, setProse] = useState('');
+  const [remember, setRemember] = useState(true);
 
   function reset() {
     setRolledKey(null);
@@ -63,6 +81,11 @@ export function TableRoller({ tables, onLog }: Props) {
   function logAndReset() {
     if (!table || rolledKey === null) return;
     const text = resultText || manualText;
+    // Keep what the player read out of their book, so this row is filled
+    // in for good after the first time it comes up.
+    if (!resultText && manualText.trim() && remember && onUpdateTable) {
+      onUpdateTable(setRowTextForKey(table, rolledKey, manualText.trim()));
+    }
     onLog({ tableId: table.id, tableName: table.name, key: rolledKey, text, prose });
     reset();
   }
@@ -97,14 +120,32 @@ export function TableRoller({ tables, onLog }: Props) {
 
       {rolledKey !== null && (
         <div>
-          <p>Rolled: {String(rolledKey)}</p>
+          <p className="roll-math">Rolled {String(rolledKey)}</p>
           {resultText ? (
-            <p>{resultText}</p>
+            <p className="table-result">{resultText}</p>
           ) : (
-            <label>
-              This row is empty — enter a result yourself, play never blocks
-              <input value={manualText} onChange={(e) => setManualText(e.target.value)} />
-            </label>
+            <div className="lookup">
+              <p className="lookup-cue">
+                Look up{' '}
+                <strong>{describeRowLabel(table!, rolledKey)}</strong>
+                {table!.sourceReference && <> in {table!.sourceReference}</>}
+              </p>
+              <label>
+                What does your book say?
+                <input
+                  value={manualText}
+                  onChange={(e) => setManualText(e.target.value)}
+                  placeholder="Type or paste the result"
+                  autoFocus
+                />
+              </label>
+              {onUpdateTable && (
+                <label>
+                  <input type="checkbox" checked={remember} onChange={(e) => setRemember(e.target.checked)} />
+                  Save it to this table so you only type it once
+                </label>
+              )}
+            </div>
           )}
           <label>
             Interpretation (optional, attached to this result)

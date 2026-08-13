@@ -70,6 +70,29 @@ export function rollOnTable(table: OracleTable, key: number | 'eye' | 'rune'): R
   return { row, needsManualResult: !row || row.text.trim() === '' };
 }
 
+/** How a row identifies itself to a human reading their book: "4–7",
+ * "the Eye", "10". Used to point the player at the right line rather than
+ * making them work it out from the roll. */
+export function describeRowKey(row: OracleTableRow): string {
+  if (row.featFace === 'eye') return 'the Eye';
+  if (row.featFace === 'rune') return 'the rune';
+  if (row.min === undefined || row.max === undefined) return '';
+  return row.min === row.max ? String(row.min) : `${row.min}–${row.max}`;
+}
+
+/** Writes text into whichever row a given roll matched — the mechanism
+ * behind filling a table by playing rather than by transcribing it up
+ * front. No-ops when the roll matched no row at all. */
+export function setRowTextForKey(
+  table: OracleTable,
+  key: number | 'eye' | 'rune',
+  text: string,
+): OracleTable {
+  const index = table.rows.findIndex((r) => matchRow(table, key) === r);
+  if (index === -1) return table;
+  return updateRow(table, index, { ...table.rows[index], text });
+}
+
 export function addRow(table: OracleTable, row: OracleTableRow): OracleTable {
   return { ...table, rows: [...table.rows, row] };
 }

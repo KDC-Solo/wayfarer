@@ -36,9 +36,11 @@ test('oracle: Telling Table answers and the Lore Table falls back on blanks', as
   await expect(page.getByText(/yes|no/i).first()).toBeVisible();
 
   // The shipped Lore Table is an empty skeleton — consulting it must not
-  // block; it flags the blank for manual lookup instead (F2.6).
+  // block (F2.6). It now names the section and row to look up and offers
+  // to keep whatever the player reads out of their book.
   await page.getByRole('button', { name: '🎲 Consult' }).click();
-  await expect(page.getByText('(blank; consult your book)')).toBeVisible();
+  await expect(page.locator('.lookup-cue')).toContainText('Strider Mode p.11-12');
+  await expect(page.getByPlaceholder(/Read Action from your book/)).toBeVisible();
   await shot(page, '03-oracle', testInfo.project.name);
 });
 
