@@ -12,6 +12,7 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@3d-dice/dice-box": "^1.1.4",
     "idb": "^8.0.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

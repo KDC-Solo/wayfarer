@@ -1,7 +1,7 @@
 # Product Requirements Document
 ## Strider Mode Companion — a solo play assistant for The One Ring 2e
 
-**Version:** 1.7 (development baseline)
+**Version:** 1.8 (development baseline)
 **Status:** Approved for development
 **Last updated:** 13 August 2026
 
@@ -14,6 +14,8 @@
 **Changes since 1.2:** F3.5 clarified — roles are skipped entirely (not just de-emphasised) for a company of one, confirmed directly in Strider Mode rather than inferred from the general solo-adjustment pattern (D11). No numeric journey-procedure values (leg length, Fatigue accrual, roll frequency) were added to F3.3, since those live in the core rulebook, which isn't on file — see D12.
 
 **Changes since 1.3:** F4.3 clarified with the verified "Spiritual Recovery" three-tier mechanic (p.20). F4.4 clarified — "experience" is two separate currencies (Adventure Points, Skill Points), not one generic pool (D13); the app validates spend against whichever pool the player selects rather than assuming which currency pays for which advancement. D14 records why the Fellowship Phase reuses the step-template *interpreter* rather than the `Journey` entity itself.
+
+**Changes since 1.7:** Phase 7 evaluated and built. The `@3d-dice/dice-box` evaluation resolved the open question in §9 favourably-but-differently than framed: its theme system does accept custom meshes, but F7.3's "generic dice only" means none are needed — the Feat die is the library's stock numbered d12 with faces 11 and 12 read as the Eye and the rune in our own code (D18). F7.5 clarified: the module defaults to **off** rather than to a capability-derived level; the threshold instead decides which level is *suggested* when a player opts in (D19). F7.4 (user texture packs) is explicitly deferred, not built — see §6. No IDs renumbered.
 
 **Changes since 1.6:** C3(b) delivered — bulk paste/file import for table rows, with the line format (keyed ranges or fill-in-order) documented publicly; C4 delivered as `SCHEMAS.md` in the repository, covering oracle tables, step templates, the bulk-import format, and the export envelope (dice packs remain reserved for Phase 7). The verified p.17 hard-terrain (−1d) / road (+1d) event-roll modifier is now encoded via an optional per-waypoint flag, extending D12's verified-and-encoded list. No IDs added or renumbered.
 
@@ -248,9 +250,9 @@ Polish, not function. Nothing in Phases 1–6 may depend on this module.
 
 **F7.3** Ship generic dice only — blank d12 and numbered d6 with several material themes. No licensed symbols.
 
-**F7.4** Support **user-supplied texture packs**: face images imported by the user and mapped to die faces, with the mapping saved as a named pack.
+**F7.4** Support **user-supplied texture packs**: face images imported by the user and mapped to die faces, with the mapping saved as a named pack. *Deferred — not built.* The rest of Phase 7 ships without it; the export envelope reserves a `dicePacks` collection and `SCHEMAS.md` marks the schema unpublished, so adding packs later is additive rather than breaking.
 
-**F7.5** Provide a graphics quality setting (off / low / high) that adjusts shadow resolution, texture size, and physics step rate. Default to low on devices below a capability threshold.
+**F7.5** Provide a graphics quality setting (off / low / high) that adjusts shadow resolution, texture size, and physics step rate. The setting defaults to **off** — the module is several megabytes and Phase 7 is polish, so it is opt-in (D19); the capability threshold determines which level is *suggested* in the picker once a player turns it on, low below the threshold and high above it.
 
 **F7.6** Cache all 3D assets locally for offline use.
 
@@ -391,4 +393,6 @@ No accounts and no telemetry, so measurement is indirect and qualitative:
 | D14 | The Fellowship Phase reuses the Phase 3 step template engine via a generic interpreter (`stepRunner.ts`), not by reusing the `Journey` entity itself | A Fellowship Phase iterates per hero turn, not per waypoint, and has no roles/land-danger — genuinely different targeting semantics from a journey. Forcing it into the `Journey` shape would have been the wrong kind of reuse; sharing the branch-resolution algorithm (the actual "Phase 3 engine") is the right kind, and is what F4.6 asks for |
 | D15 | Combat (F5.8) is the third consumer of the shared interpreter, via its own `Combat` entity and a new `attack` step type in the `StepTemplateStep` union | Same reasoning as D14: the round loop (opening volleys → repeating close-combat rounds, per hero per round, ended only by player decision) is genuinely new targeting semantics, but the branch-resolution algorithm is shared. The attack step is a real new step *type* (adversary targeting, damage, Piercing flow don't fit any existing step), added to the union exactly as §7 intends — it carries no configuration, since everything about an attack is live input |
 | D16 | Combat ships with blank stance TNs and player-entered damage/Injury/Protection numbers; only Strider Mode p.15 content is encoded | Same reasoning as D12: the base combat procedure and its numbers live in the core rulebook, which isn't on file. What p.15 verifies and the engine encodes: the Skirmish stance's dice modifiers and escape roll, the Gain Ground task, the opening-volley framing, and the adversary-action guidance the default template's prompts cite. Piercing-Blow detection is therefore assisted-but-player-confirmed rather than automatic |
+| D18 | The 3D Feat die is the stock numbered d12 with faces 11/12 read as Eye/rune, not a custom mesh | The evaluation §9 asked for came out favourably — dice-box themes do accept custom meshes — but F7.3 forbids licensed symbols anyway, so generic geometry is not a compromise here, it is the requirement. Reading two numeric faces as the special ones keeps all TOR meaning in our own code (`dice.ts` stays the sole owner of what a Feat face means) and avoids custom UVs entirely |
+| D19 | The 3D dice module defaults to off and is opt-in, rather than defaulting to a capability-derived quality level | The module is ~3 MB of chunks and wasm. Defaulting it on would make every first roll a multi-megabyte download for a feature the PRD itself calls "polish, not function," contradicting N1/N6 and Phase 7's own "never a functional dependency." The capability threshold F7.5 asks for still exists — it marks the suggested level in the picker. Its assets are runtime-cached, not precached, for the same reason (F7.6 satisfied without taxing users who never enable it) |
 | D17 | Sessions (F6.1) are log boundaries — a start marker plus per-entry stamping at the persistence choke point — not a stored entity, and there is no explicit "end session" | §7 froze `Chronicle.sessionList` and `LogEntry.sessionId` before sessions had behavior; boundaries satisfy the filter requirement with no new store, keep the action layer pure (App.tsx stamps at its single persistence point), and match how a play journal works — the next session's start is the previous one's end. Revisit only if sessions ever need their own metadata (named sessions, per-session notes) |

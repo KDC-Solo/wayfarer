@@ -12,6 +12,7 @@ import {
 } from '../engine/dice.ts';
 import { deriveHeroStates } from '../engine/hero.ts';
 import type { DiceInputMode, Hero } from '../engine/types.ts';
+import { DiceQualityControl, DiceTray, useDice3d } from './DiceTray.tsx';
 
 type AttributeName = keyof Hero['attributes'];
 import { FeatDiePicker, SuccessDiePicker } from './DicePickers.tsx';
@@ -73,6 +74,8 @@ export function RollPanel({
     initialTargetNumber !== undefined ? String(initialTargetNumber) : '',
   );
   const [phase, setPhase] = useState<Phase>({ kind: 'setup' });
+  // Phase 7 — optional polish; every path below still works with it off.
+  const dice3d = useDice3d();
 
   const { weary } = deriveHeroStates(hero);
   const skillRank = rankPool[skillName] ?? 0;
@@ -91,13 +94,22 @@ export function RollPanel({
     });
 
     if (diceInputMode === 'app-rolls') {
-      const featDice = Array.from({ length: requirement.featDiceCount }, rollFeatDie);
-      const successDice = Array.from({ length: requirement.successDiceCount }, rollSuccessDie);
-      finish(requirement, featDice, successDice);
+      // F7.1 — when 3D is on, the faces come from the simulation; a null
+      // result (off, still loading, failed, or skipped) falls back to the
+      // numeric roll, so this path never depends on the module (F7.2).
+      void dice3d.roll(requirement.featDiceCount, requirement.successDiceCount).then((simulated) => {
+        const featDice =
+          simulated?.featDice ?? Array.from({ length: requirement.featDiceCount }, rollFeatDie);
+        const successDice =
+          simulated?.successDice ?? Array.from({ length: requirement.successDiceCount }, rollSuccessDie);
+        finish(requirement, featDice, successDice);
+      });
       return;
     }
 
-    // hybrid: engine pre-rolls the Success pool, player only taps the Feat die.
+    // hybrid: engine pre-rolls the Success pool, player only taps the Feat
+    // die. F7.7 — nothing is thrown in 3D here; the Feat die the player
+    // taps is theirs, and the Success pool resolves numerically.
     const successDice =
       diceInputMode === 'hybrid'
         ? Array.from({ length: requirement.successDiceCount }, rollSuccessDie)
@@ -153,6 +165,13 @@ export function RollPanel({
     <section className="roll-panel">
       <h3>Roll for {hero.name}</h3>
 
+      {/* Mounted for the panel's whole life, not just the setup phase: the
+          simulation initialises against this container once and keeps
+          rendering into it while the dice tumble (the phase flips to
+          'resolved' as soon as faces are read). Collapsed to zero height
+          when idle, so an off/absent 3D module costs no layout. */}
+      <DiceTray rolling={dice3d.rolling} onSkip={dice3d.skip} />
+
       {phase.kind === 'setup' && (
         <>
           <label>
@@ -201,7 +220,10 @@ export function RollPanel({
             </p>
           )}
           {weary && <p role="status">Weary — Success dice showing 1–3 will count as zero.</p>}
-          <button className="primary big" onClick={beginRoll}>
+          {diceInputMode === 'app-rolls' && (
+            <DiceQualityControl quality={dice3d.quality} onChange={dice3d.changeQuality} />
+          )}
+          <button className="primary big" onClick={beginRoll} disabled={dice3d.rolling}>
             🎲 Roll
           </button>
         </>

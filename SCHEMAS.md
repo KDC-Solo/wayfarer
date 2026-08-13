@@ -125,5 +125,8 @@ tables/templates JSON for now and expect a dedicated pack-import path in a futur
 
 ## Dice texture packs
 
-Reserved for the optional 3D dice module (PRD Phase 7); no schema is published yet. The
-envelope will gain an optional `dicePacks` collection rather than changing existing fields.
+**Not yet published.** The 3D dice module (PRD Phase 7) ships with generic dice only — a
+stock numbered d12 read as the Feat die (faces 11 and 12 are the Eye and the rune) and a
+numbered d6 for Success dice. User-supplied texture packs (F7.4) are deferred; when they
+land, the export envelope gains an optional `dicePacks` collection rather than changing any
+field documented above, so packs authored against contract 7 keep working.
