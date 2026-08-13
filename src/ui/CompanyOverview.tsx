@@ -109,6 +109,7 @@ function HeroCard({
       </p>
       {weary && <span className="badge">Weary</span>}
       {miserable && <span className="badge">Miserable</span>}
+      {hero.wounded && <span className="badge">{hero.woundTreated ? 'Wounded (treated)' : 'Wounded'}</span>}
       <table>
         <tbody>
           {RESOURCE_FIELDS.map((field) => (

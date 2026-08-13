@@ -127,11 +127,19 @@ export function describeRollRequirement(params: {
   companySize: number;
   favourMode: FavourMode;
   weary: boolean;
+  /** Success-dice adjustment from circumstances — e.g. the Skirmish stance's
+   * lost (1d) on ranged attacks (Strider Mode p.15, `combat.ts`) or Gain
+   * Ground bonus dice. Never drops the pool below zero. */
+  successDiceDelta?: number;
+  /** Direct TN override (F5.7/N7) — e.g. a combat stance TN entered by the
+   * player, replacing the attribute-derived formula. */
+  targetNumberOverride?: number;
 }): RollRequirement {
   return {
     featDiceCount: params.favourMode === 'normal' ? 1 : 2,
-    successDiceCount: params.skillRank,
-    targetNumber: targetNumber(params.attributeValue, params.companySize),
+    successDiceCount: Math.max(0, params.skillRank + (params.successDiceDelta ?? 0)),
+    targetNumber:
+      params.targetNumberOverride ?? targetNumber(params.attributeValue, params.companySize),
     favourMode: params.favourMode,
     weary: params.weary,
   };

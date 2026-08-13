@@ -489,6 +489,49 @@ legend {
   font-weight: 700;
 }
 
+/* Combat overview (F5.6) — denser than .company-grid so a whole fight fits
+   a phone screen without scrolling. */
+.combat-overview {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--space-2);
+  margin-block-end: var(--space-4);
+}
+
+.combatant {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg-elevated);
+  padding: var(--space-2) var(--space-3);
+  font-size: 0.85rem;
+}
+
+.combatant header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.combatant header h4 {
+  margin: 0;
+  font-family: var(--font-serif);
+  font-size: 0.95rem;
+  flex: 1;
+}
+
+.combatant p {
+  margin-block: var(--space-1);
+}
+
+.combatant.adversary {
+  border-color: var(--danger);
+}
+
+.combatant.out {
+  opacity: 0.5;
+}
+
 .badge {
   display: inline-block;
   font-size: 0.7rem;

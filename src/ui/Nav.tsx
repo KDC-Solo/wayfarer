@@ -1,4 +1,4 @@
-export type TabId = 'company' | 'oracle' | 'journey' | 'fellowship' | 'templates';
+export type TabId = 'company' | 'oracle' | 'journey' | 'combat' | 'fellowship' | 'templates';
 
 interface TabDef {
   id: TabId;
@@ -10,6 +10,7 @@ const TABS: TabDef[] = [
   { id: 'company', label: 'Company', icon: '🧑‍🤝‍🧑' },
   { id: 'oracle', label: 'Oracle', icon: '🔮' },
   { id: 'journey', label: 'Journey', icon: '🗺️' },
+  { id: 'combat', label: 'Combat', icon: '⚔️' },
   { id: 'fellowship', label: 'Fellowship', icon: '🏕️' },
   { id: 'templates', label: 'Templates', icon: '⚙️' },
 ];
@@ -18,14 +19,18 @@ interface Props {
   active: TabId;
   onChange: (tab: TabId) => void;
   liveJourney: boolean;
+  liveCombat: boolean;
   liveFellowship: boolean;
 }
 
-export function Nav({ active, onChange, liveJourney, liveFellowship }: Props) {
+export function Nav({ active, onChange, liveJourney, liveCombat, liveFellowship }: Props) {
   return (
     <nav className="nav" aria-label="Sections">
       {TABS.map((tab) => {
-        const live = (tab.id === 'journey' && liveJourney) || (tab.id === 'fellowship' && liveFellowship);
+        const live =
+          (tab.id === 'journey' && liveJourney) ||
+          (tab.id === 'combat' && liveCombat) ||
+          (tab.id === 'fellowship' && liveFellowship);
         return (
           <button
             key={tab.id}

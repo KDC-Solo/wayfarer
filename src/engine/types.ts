@@ -58,6 +58,15 @@ export interface Hero {
    */
   adventurePoints: number;
   skillPoints: number;
+  /**
+   * F5.4 — Wounded status and whether the wound has been treated. The
+   * recovery mechanics themselves (treatment rolls, days on the recovery
+   * track) are core-rulebook content, so these are player-advanced flags
+   * (see hero.ts). Optional so pre-Phase-5 stored heroes load unchanged —
+   * absent means false.
+   */
+  wounded?: boolean;
+  woundTreated?: boolean;
 }
 
 export interface Chronicle {
@@ -83,6 +92,7 @@ export type LogEntryType =
   | 'prose'
   | 'journey-event'
   | 'fellowship-event'
+  | 'combat-event'
   | 'system';
 
 /**
@@ -100,14 +110,15 @@ export interface LogEntry {
   /** Free-form structured payload; shape depends on `type`. */
   payload: Record<string, unknown>;
   prose: string | null;
-  /** The id of whatever step-template run (Journey or FellowshipPhase)
-   * produced this entry, if any — reused across both rather than adding a
-   * second id field, so chronicle filtering (F6.1) works uniformly. */
+  /** The id of whatever step-template run (Journey, FellowshipPhase, or
+   * Combat) produced this entry, if any — reused across all three rather
+   * than adding more id fields, so chronicle filtering (F6.1) works
+   * uniformly. */
   journeyId: string | null;
   sessionId: string | null;
 }
 
-// Bumped for the Phase 4 data model (adventure/skill points, Fellowship
-// phase). No migration path from earlier schema versions — nothing shipped
-// against them yet.
-export const SCHEMA_VERSION = 5;
+// Bumped for the Phase 5 data model (combat, wounded status, combat-event
+// log entries). Backwards compatible with version-5 data: the new Hero
+// fields are optional and combats simply may be absent from older exports.
+export const SCHEMA_VERSION = 6;

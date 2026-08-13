@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { createChronicle } from './chronicle.ts';
+import { addAdversary, createAdversary, createCombat } from './combat.ts';
 import { createFellowshipPhase } from './fellowshipPhase.ts';
 import { createJourney, saveAsRoute } from './journey.ts';
 import { createLogEntry } from './log.ts';
@@ -8,6 +9,7 @@ import { createStepTemplate } from './stepTemplate.ts';
 import {
   appendLogEntry,
   clearAll,
+  getAllCombats,
   getAllFellowshipPhases,
   getAllJourneys,
   getAllLogEntries,
@@ -16,6 +18,7 @@ import {
   getAllStepTemplates,
   getChronicle,
   putChronicle,
+  putCombat,
   putFellowshipPhase,
   putJourney,
   putOracleTable,
@@ -45,7 +48,11 @@ function seedJourneyContent() {
     stepTemplateId: template.id,
     heroIds: ['h1'],
   });
-  return { table, template, journey, route, fellowshipPhase };
+  const combat = addAdversary(
+    createCombat({ name: 'Ambush', stepTemplateId: template.id, heroIds: ['h1'], openingVolleys: 1 }),
+    createAdversary({ name: 'Orc', endurance: 12, hate: 2 }),
+  );
+  return { table, template, journey, route, fellowshipPhase, combat };
 }
 
 describe('exportState', () => {
@@ -53,17 +60,18 @@ describe('exportState', () => {
     await expect(exportState()).rejects.toThrow('No chronicle to export');
   });
 
-  it('bundles the current chronicle, log, oracle tables, step templates, journeys, routes, and fellowship phases', async () => {
+  it('bundles the current chronicle, log, oracle tables, step templates, journeys, routes, fellowship phases, and combats', async () => {
     const chronicle = createChronicle();
     await putChronicle(chronicle);
     const entry = createLogEntry({ type: 'system' });
     await appendLogEntry(entry);
-    const { table, template, journey, route, fellowshipPhase } = seedJourneyContent();
+    const { table, template, journey, route, fellowshipPhase, combat } = seedJourneyContent();
     await putOracleTable(table);
     await putStepTemplate(template);
     await putJourney(journey);
     await putRoute(route);
     await putFellowshipPhase(fellowshipPhase);
+    await putCombat(combat);
 
     const envelope = await exportState();
     expect(envelope.format).toBe('wayfarer-export');
@@ -74,6 +82,7 @@ describe('exportState', () => {
     expect(envelope.journeys).toEqual([journey]);
     expect(envelope.routes).toEqual([route]);
     expect(envelope.fellowshipPhases).toEqual([fellowshipPhase]);
+    expect(envelope.combats).toEqual([combat]);
   });
 });
 
@@ -93,7 +102,7 @@ describe('parseStateEnvelope', () => {
 });
 
 describe('export/import round trip', () => {
-  it('restores identical chronicle, log, oracle tables, step templates, journeys, routes, and fellowship phases', async () => {
+  it('restores identical chronicle, log, oracle tables, step templates, journeys, routes, fellowship phases, and combats', async () => {
     const chronicle = { ...createChronicle(), currentYear: 2953, currentLocation: 'Bree' };
     await putChronicle(chronicle);
     const entries = [
@@ -101,12 +110,13 @@ describe('export/import round trip', () => {
       createLogEntry({ type: 'prose', prose: 'The road goes ever on.' }),
     ];
     for (const e of entries) await appendLogEntry(e);
-    const { table, template, journey, route, fellowshipPhase } = seedJourneyContent();
+    const { table, template, journey, route, fellowshipPhase, combat } = seedJourneyContent();
     await putOracleTable(table);
     await putStepTemplate(template);
     await putJourney(journey);
     await putRoute(route);
     await putFellowshipPhase(fellowshipPhase);
+    await putCombat(combat);
 
     const json = serializeState(await exportState());
 
@@ -123,6 +133,7 @@ describe('export/import round trip', () => {
     expect(await getAllJourneys()).toEqual([journey]);
     expect(await getAllRoutes()).toEqual([route]);
     expect(await getAllFellowshipPhases()).toEqual([fellowshipPhase]);
+    expect(await getAllCombats()).toEqual([combat]);
   });
 
   it('replaces existing state rather than merging with it', async () => {

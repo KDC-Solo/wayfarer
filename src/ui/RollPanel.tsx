@@ -29,6 +29,17 @@ interface Props {
    * land-danger-derived favour (Strider Mode p.17) — still user-overridable (N7). */
   initialSkillName?: string;
   initialFavourMode?: FavourMode;
+  /** Combat (F5.8): roll on a different rank pool than hero.skills — e.g.
+   * combat proficiencies for an attack. Defaults to hero.skills. */
+  skillOptions?: Record<string, number>;
+  /** Label for the rank-pool select — "Proficiency" in combat. */
+  skillLabel?: string;
+  /** Pre-fills the Target Number override — e.g. a stance TN (F5.1). The
+   * player can still edit or clear it (F5.7/N7). */
+  initialTargetNumber?: number;
+  /** Success-dice adjustment from circumstances — e.g. Skirmish stance's
+   * lost (1d) on ranged attacks (Strider Mode p.15). */
+  successDiceDelta?: number;
 }
 
 type Phase =
@@ -43,28 +54,40 @@ export function RollPanel({
   onResolved,
   initialSkillName,
   initialFavourMode,
+  skillOptions,
+  skillLabel,
+  initialTargetNumber,
+  successDiceDelta,
 }: Props) {
+  const rankPool = skillOptions ?? hero.skills;
   const [skillName, setSkillName] = useState<string>(
-    initialSkillName && initialSkillName in hero.skills
+    initialSkillName && initialSkillName in rankPool
       ? initialSkillName
-      : (Object.keys(hero.skills)[0] ?? ''),
+      : (Object.keys(rankPool)[0] ?? ''),
   );
   const [attribute, setAttribute] = useState<AttributeName>('heart');
   const [favourMode, setFavourMode] = useState<FavourMode>(initialFavourMode ?? 'normal');
   const [hopeSpent, setHopeSpent] = useState(false);
+  /** N7/F5.7 — every computed value is overridable; blank = computed TN. */
+  const [tnOverride, setTnOverride] = useState<string>(
+    initialTargetNumber !== undefined ? String(initialTargetNumber) : '',
+  );
   const [phase, setPhase] = useState<Phase>({ kind: 'setup' });
 
   const { weary } = deriveHeroStates(hero);
-  const skillRank = hero.skills[skillName] ?? 0;
+  const skillRank = rankPool[skillName] ?? 0;
   const attributeValue = hero.attributes[attribute];
 
   function beginRoll() {
+    const tn = tnOverride.trim() === '' ? undefined : Number(tnOverride);
     const requirement = describeRollRequirement({
       skillRank,
       attributeValue,
       companySize,
       favourMode,
       weary,
+      successDiceDelta,
+      targetNumberOverride: tn !== undefined && Number.isFinite(tn) ? tn : undefined,
     });
 
     if (diceInputMode === 'app-rolls') {
@@ -133,11 +156,11 @@ export function RollPanel({
       {phase.kind === 'setup' && (
         <>
           <label>
-            Skill
+            {skillLabel ?? 'Skill'}
             <select value={skillName} onChange={(e) => setSkillName(e.target.value)}>
-              {Object.keys(hero.skills).map((s) => (
+              {Object.keys(rankPool).map((s) => (
                 <option key={s} value={s}>
-                  {s} (rank {hero.skills[s]})
+                  {s} (rank {rankPool[s]})
                 </option>
               ))}
             </select>
@@ -162,6 +185,21 @@ export function RollPanel({
             <input type="checkbox" checked={hopeSpent} onChange={(e) => setHopeSpent(e.target.checked)} />
             Spend Hope (+{attributeValue})
           </label>
+          <label>
+            Target number (blank = computed)
+            <input
+              type="number"
+              value={tnOverride}
+              onChange={(e) => setTnOverride(e.target.value)}
+            />
+          </label>
+          {(successDiceDelta ?? 0) !== 0 && (
+            <p role="status">
+              {(successDiceDelta ?? 0) > 0 ? '+' : ''}
+              {successDiceDelta} Success {Math.abs(successDiceDelta ?? 0) === 1 ? 'die' : 'dice'} from
+              circumstances.
+            </p>
+          )}
           {weary && <p role="status">Weary — Success dice showing 1–3 will count as zero.</p>}
           <button className="primary big" onClick={beginRoll}>
             🎲 Roll

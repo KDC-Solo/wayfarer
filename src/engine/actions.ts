@@ -4,6 +4,7 @@
 
 import { replaceHero } from './company.ts';
 import { applyExperienceSpend, awardMilestone, type ExperienceCurrency, type ExperienceMilestone, type ExperienceTarget } from './experience.ts';
+import { applyWound, recoverFromWound, treatWound } from './hero.ts';
 import { createLogEntry } from './log.ts';
 import { applyResourceDelta, setResourceValue, type ResourceField } from './resources.ts';
 import type { SkillRollResult } from './dice.ts';
@@ -154,6 +155,51 @@ export function recordJourneyEvent(
     prose: message,
     journeyId,
   });
+}
+
+/** F5.2/F5.3 — combat happenings that aren't themselves skill rolls or
+ * chronicle-state changes: adversary damage/Hate spends, round markers,
+ * escapes, overrides (F5.7). `payload` carries the structured detail. */
+export function recordCombatEvent(
+  combatId: string,
+  heroId: string | null,
+  message: string,
+  payload?: Record<string, unknown>,
+): LogEntry {
+  return createLogEntry({
+    type: 'combat-event',
+    heroId,
+    prose: message,
+    payload,
+    journeyId: combatId,
+  });
+}
+
+/** F5.4 — Wounded status transitions on a hero, logged like any other
+ * mechanical change. Usable outside combat too (treatment and recovery
+ * mostly happen after the fight), hence the optional combatId. */
+export function recordWoundChange(
+  chronicle: Chronicle,
+  heroId: string,
+  change: 'wounded' | 'treated' | 'recovered',
+  combatId?: string,
+): ActionResult {
+  const hero = requireHero(chronicle, heroId);
+  const updatedHero =
+    change === 'wounded' ? applyWound(hero) : change === 'treated' ? treatWound(hero) : recoverFromWound(hero);
+  const logEntry = createLogEntry({
+    type: 'combat-event',
+    heroId,
+    prose:
+      change === 'wounded'
+        ? `${hero.name} is Wounded.`
+        : change === 'treated'
+          ? `${hero.name}'s wound has been treated.`
+          : `${hero.name} has recovered from their wound.`,
+    payload: { woundChange: change },
+    journeyId: combatId ?? null,
+  });
+  return { chronicle: replaceHero(chronicle, updatedHero), logEntry };
 }
 
 /** F3.7-equivalent for a Fellowship phase (F4.2's prompt/undertaking beats). */

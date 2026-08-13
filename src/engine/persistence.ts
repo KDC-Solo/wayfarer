@@ -4,6 +4,7 @@ import type { OracleTable } from './oracleTable.ts';
 import type { StepTemplate } from './stepTemplate.ts';
 import type { Journey, Route } from './journey.ts';
 import type { FellowshipPhase } from './fellowshipPhase.ts';
+import type { Combat } from './combat.ts';
 
 // IndexedDB for chronicle + log + oracle tables + step templates + journeys
 // + routes + Fellowship phases (PRD §9 — volume grows unbounded over a
@@ -11,7 +12,7 @@ import type { FellowshipPhase } from './fellowshipPhase.ts';
 // database = one campaign; the app does not manage multiple chronicles.
 
 const DB_NAME = 'wayfarer';
-const DB_VERSION = 4;
+const DB_VERSION = 5;
 const CHRONICLE_STORE = 'chronicle';
 const LOG_STORE = 'log';
 const ORACLE_TABLE_STORE = 'oracleTables';
@@ -19,6 +20,7 @@ const STEP_TEMPLATE_STORE = 'stepTemplates';
 const JOURNEY_STORE = 'journeys';
 const ROUTE_STORE = 'routes';
 const FELLOWSHIP_PHASE_STORE = 'fellowshipPhases';
+const COMBAT_STORE = 'combats';
 const SINGLETON_KEY = 'current';
 
 interface WayfarerDB extends DBSchema {
@@ -51,6 +53,10 @@ interface WayfarerDB extends DBSchema {
     key: string;
     value: FellowshipPhase;
   };
+  [COMBAT_STORE]: {
+    key: string;
+    value: Combat;
+  };
 }
 
 let dbPromise: Promise<IDBPDatabase<WayfarerDB>> | null = null;
@@ -75,6 +81,9 @@ function getDb(): Promise<IDBPDatabase<WayfarerDB>> {
         }
         if (oldVersion < 4) {
           db.createObjectStore(FELLOWSHIP_PHASE_STORE, { keyPath: 'id' });
+        }
+        if (oldVersion < 5) {
+          db.createObjectStore(COMBAT_STORE, { keyPath: 'id' });
         }
       },
     });
@@ -170,6 +179,16 @@ export async function putFellowshipPhase(phase: FellowshipPhase): Promise<void> 
   await db.put(FELLOWSHIP_PHASE_STORE, phase);
 }
 
+export async function getAllCombats(): Promise<Combat[]> {
+  const db = await getDb();
+  return db.getAll(COMBAT_STORE);
+}
+
+export async function putCombat(combat: Combat): Promise<void> {
+  const db = await getDb();
+  await db.put(COMBAT_STORE, combat);
+}
+
 /** Full local-state reset. Used by tests and by a future "start new campaign" flow. */
 export async function clearAll(): Promise<void> {
   const db = await getDb();
@@ -180,4 +199,5 @@ export async function clearAll(): Promise<void> {
   await db.clear(JOURNEY_STORE);
   await db.clear(ROUTE_STORE);
   await db.clear(FELLOWSHIP_PHASE_STORE);
+  await db.clear(COMBAT_STORE);
 }

@@ -230,6 +230,19 @@ function StepUI({
     );
   }
 
+  if (step.type === 'attack') {
+    // Attack steps only make sense inside a combat (CombatRunner) — a
+    // template mixing them into a journey gets a skip, not a dead end.
+    return (
+      <div key={step.id}>
+        <p role="status">Attack steps run inside a combat, not a journey.</p>
+        <button onClick={() => onApply({ chronicle, journey: completeStep(journey), logEntries: [] })}>
+          Skip
+        </button>
+      </div>
+    );
+  }
+
   return null; // conditional-branch is auto-resolved before reaching StepUI
 }
 

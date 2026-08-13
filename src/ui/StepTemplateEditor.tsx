@@ -90,6 +90,9 @@ function StepListEditor({
       case 'resource-change':
         step = { ...base, type: 'resource-change', field: 'fatigue', amount: 0, scope: 'whole-company' };
         break;
+      case 'attack':
+        step = { ...base, type: 'attack' };
+        break;
       case 'conditional-branch':
         step = { ...base, type: 'conditional-branch', when: 'previous-roll-failed', skipCount: 1 };
         break;
@@ -128,6 +131,7 @@ function StepListEditor({
           <option value="roll">Roll</option>
           <option value="table-draw">Table draw</option>
           <option value="resource-change">Resource change</option>
+          <option value="attack">Attack (combat)</option>
           <option value="conditional-branch">Conditional branch</option>
         </select>
       </label>
@@ -252,6 +256,10 @@ function StepRow({
             </select>
           </label>
         </>
+      )}
+
+      {step.type === 'attack' && (
+        <p>Proficiency, target, TN, damage, and Piercing Blows are all chosen live during combat.</p>
       )}
 
       {step.type === 'conditional-branch' && (

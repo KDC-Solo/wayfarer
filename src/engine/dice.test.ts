@@ -234,6 +234,25 @@ describe('describeRollRequirement', () => {
     });
     expect(favoured.featDiceCount).toBe(2);
   });
+
+  it('applies a success-dice delta without going below zero (Skirmish −1d, p.15)', () => {
+    const base = { attributeValue: 4, companySize: 2, favourMode: 'normal' as const, weary: false };
+    expect(describeRollRequirement({ ...base, skillRank: 2, successDiceDelta: -1 }).successDiceCount).toBe(1);
+    expect(describeRollRequirement({ ...base, skillRank: 0, successDiceDelta: -1 }).successDiceCount).toBe(0);
+    expect(describeRollRequirement({ ...base, skillRank: 1, successDiceDelta: 2 }).successDiceCount).toBe(3);
+  });
+
+  it('a target-number override replaces the attribute formula (F5.7/N7)', () => {
+    const requirement = describeRollRequirement({
+      skillRank: 2,
+      attributeValue: 4,
+      companySize: 2,
+      favourMode: 'normal',
+      weary: false,
+      targetNumberOverride: 9,
+    });
+    expect(requirement.targetNumber).toBe(9);
+  });
 });
 
 describe('rollFeatDie / rollSuccessDie', () => {

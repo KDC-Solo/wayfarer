@@ -29,7 +29,25 @@ export function createHero(input: NewHeroInput): Hero {
     resources: { endurance: 0, hope: 0, fatigue: 0, shadow: 0, shadowPoints: 0, shadowScars: 0 },
     adventurePoints: 0,
     skillPoints: 0,
+    wounded: false,
+    woundTreated: false,
   };
+}
+
+/** F5.4 — a failed Protection roll leaves the hero Wounded. Treatment and
+ * the recovery track are core-rulebook mechanics not on file, so the app
+ * tracks the two states (wounded, treated) and the player advances them
+ * per their book; `recoverFromWound` clears both when recovery completes. */
+export function applyWound(hero: Hero): Hero {
+  return { ...hero, wounded: true, woundTreated: false };
+}
+
+export function treatWound(hero: Hero): Hero {
+  return { ...hero, wounded: true, woundTreated: true };
+}
+
+export function recoverFromWound(hero: Hero): Hero {
+  return { ...hero, wounded: false, woundTreated: false };
 }
 
 export interface DerivedStates {

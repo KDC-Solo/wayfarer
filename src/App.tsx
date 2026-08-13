@@ -9,11 +9,13 @@ import {
   undoResourceChange,
 } from './engine/actions.ts';
 import { createFellowshipPhase, type FellowshipPhase } from './engine/fellowshipPhase.ts';
+import type { Combat } from './engine/combat.ts';
 import { createLogEntry } from './engine/log.ts';
 import {
   appendLogEntry,
   deleteOracleTable,
   deleteStepTemplate,
+  getAllCombats,
   getAllFellowshipPhases,
   getAllJourneys,
   getAllLogEntries,
@@ -22,6 +24,7 @@ import {
   getAllStepTemplates,
   getChronicle,
   putChronicle,
+  putCombat,
   putFellowshipPhase,
   putJourney,
   putOracleTable,
@@ -39,6 +42,7 @@ import type { Chronicle, DiceInputMode, Hero, LogEntry } from './engine/types.ts
 import { defaultOracleTables } from './data/oracleTables.ts';
 import { defaultJourneyContent } from './data/journeyStepTemplates.ts';
 import { defaultFellowshipStepTemplate } from './data/fellowshipStepTemplate.ts';
+import { defaultCombatStepTemplate } from './data/combatStepTemplate.ts';
 import { CompanyOverview } from './ui/CompanyOverview.tsx';
 import { HeroForm } from './ui/HeroForm.tsx';
 import { RollPanel } from './ui/RollPanel.tsx';
@@ -50,9 +54,13 @@ import { JourneyRunner } from './ui/JourneyRunner.tsx';
 import { StepTemplateEditor } from './ui/StepTemplateEditor.tsx';
 import { FellowshipPlanner } from './ui/FellowshipPlanner.tsx';
 import { FellowshipRunner } from './ui/FellowshipRunner.tsx';
+import { CombatPlanner } from './ui/CombatPlanner.tsx';
+import { CombatRunner } from './ui/CombatRunner.tsx';
 import { Nav, type TabId } from './ui/Nav.tsx';
 import { BrandMark } from './ui/BrandMark.tsx';
 import { Welcome } from './ui/Welcome.tsx';
+
+const COMBAT_TEMPLATE_SEEDED_KEY = 'wayfarer.seeded.combat-template';
 
 export default function App() {
   const [tab, setTab] = useState<TabId>('company');
@@ -65,6 +73,8 @@ export default function App() {
   const [activeJourneyId, setActiveJourneyId] = useState<string | null>(null);
   const [fellowshipPhases, setFellowshipPhases] = useState<FellowshipPhase[]>([]);
   const [activeFellowshipPhaseId, setActiveFellowshipPhaseId] = useState<string | null>(null);
+  const [combats, setCombats] = useState<Combat[]>([]);
+  const [activeCombatId, setActiveCombatId] = useState<string | null>(null);
   const [status, setStatus] = useState<string | null>(null);
   const [showHeroForm, setShowHeroForm] = useState(false);
   const [lastResourceChange, setLastResourceChange] = useState<LogEntry | null>(null);
@@ -87,9 +97,18 @@ export default function App() {
       tables = [...defaultOracleTables(), ...journeyTables];
       for (const t of tables) await putOracleTable(t);
       const fellowshipTemplate = defaultFellowshipStepTemplate();
-      templates = [journeyTemplate, fellowshipTemplate];
+      templates = [journeyTemplate, fellowshipTemplate, defaultCombatStepTemplate()];
       for (const t of templates) await putStepTemplate(t);
+    } else if (!localStorage.getItem(COMBAT_TEMPLATE_SEEDED_KEY)) {
+      // Campaigns started before Phase 5 shipped already pass the first-run
+      // check above, so the combat template gets its own one-time seed. The
+      // marker (localStorage is for small settings, PRD §9) rather than a
+      // "does one exist" scan means deleting the template is respected.
+      const combatTemplate = defaultCombatStepTemplate();
+      await putStepTemplate(combatTemplate);
+      templates = [...templates, combatTemplate];
     }
+    localStorage.setItem(COMBAT_TEMPLATE_SEEDED_KEY, '1');
     setOracleTables(tables);
     setStepTemplates(templates);
 
@@ -105,6 +124,10 @@ export default function App() {
     setActiveFellowshipPhaseId(
       loadedFellowshipPhases.find((p) => p.status === 'in-progress')?.id ?? null,
     );
+
+    const loadedCombats = await getAllCombats();
+    setCombats(loadedCombats);
+    setActiveCombatId(loadedCombats.find((c) => c.status === 'in-progress')?.id ?? null);
   }
 
   useEffect(() => {
@@ -266,6 +289,33 @@ export default function App() {
     setRoutes((r) => [...r, route]);
   }
 
+  async function handleBeginCombat(combat: Combat) {
+    await putCombat(combat);
+    const entry = createLogEntry({
+      type: 'combat-event',
+      prose: `Combat begins: ${combat.name}.`,
+      journeyId: combat.id,
+    });
+    await appendLogEntry(entry);
+    setLog((l) => [...l, entry]);
+    setCombats((c) => [...c, combat]);
+    setActiveCombatId(combat.id);
+    setTab('combat');
+  }
+
+  async function handleCombatApply(params: { chronicle: Chronicle; combat: Combat; logEntries: LogEntry[] }) {
+    await putChronicle(params.chronicle);
+    await putCombat(params.combat);
+    for (const entry of params.logEntries) {
+      await appendLogEntry(entry);
+    }
+    setChronicle(params.chronicle);
+    setCombats((c) => c.map((existing) => (existing.id === params.combat.id ? params.combat : existing)));
+    if (params.logEntries.length > 0) {
+      setLog((l) => [...l, ...params.logEntries]);
+    }
+  }
+
   async function handleBeginFellowshipPhase(stepTemplateId: string) {
     if (!chronicle) return;
     const nextChronicle = advanceYear(chronicle);
@@ -332,6 +382,10 @@ export default function App() {
   const activeFellowshipTemplate = activeFellowshipPhase
     ? (stepTemplates.find((t) => t.id === activeFellowshipPhase.stepTemplateId) ?? null)
     : null;
+  const activeCombat = combats.find((c) => c.id === activeCombatId) ?? null;
+  const activeCombatTemplate = activeCombat
+    ? (stepTemplates.find((t) => t.id === activeCombat.stepTemplateId) ?? null)
+    : null;
 
   const hasCompany = chronicle.company.length > 0;
 
@@ -369,6 +423,7 @@ export default function App() {
             active={tab}
             onChange={setTab}
             liveJourney={activeJourney?.status === 'in-progress'}
+            liveCombat={activeCombat?.status === 'in-progress'}
             liveFellowship={activeFellowshipPhase?.status === 'in-progress'}
           />
         )}
@@ -448,6 +503,25 @@ export default function App() {
                 />
               ))}
 
+            {tab === 'combat' &&
+              (activeCombat && activeCombatTemplate ? (
+                <CombatRunner
+                  chronicle={chronicle}
+                  combat={activeCombat}
+                  template={activeCombatTemplate}
+                  oracleTables={oracleTables}
+                  log={log}
+                  onApply={handleCombatApply}
+                  onDismiss={() => setActiveCombatId(null)}
+                />
+              ) : (
+                <CombatPlanner
+                  company={chronicle.company}
+                  stepTemplates={stepTemplates}
+                  onBegin={handleBeginCombat}
+                />
+              ))}
+
             {tab === 'fellowship' &&
               (activeFellowshipPhase && activeFellowshipTemplate ? (
                 <FellowshipRunner
@@ -470,7 +544,7 @@ export default function App() {
               <>
                 <div className="view-intro">
                   <h2>Step templates</h2>
-                  <p>The same engine drives journeys and Fellowship phases — edit either here.</p>
+                  <p>The same engine drives journeys, combats, and Fellowship phases — edit any of them here.</p>
                 </div>
                 <StepTemplateEditor
                   templates={stepTemplates}

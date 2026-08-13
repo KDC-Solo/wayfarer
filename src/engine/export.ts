@@ -3,9 +3,11 @@ import type { OracleTable } from './oracleTable.ts';
 import type { StepTemplate } from './stepTemplate.ts';
 import type { Journey, Route } from './journey.ts';
 import type { FellowshipPhase } from './fellowshipPhase.ts';
+import type { Combat } from './combat.ts';
 import {
   appendLogEntry,
   clearAll,
+  getAllCombats,
   getAllFellowshipPhases,
   getAllJourneys,
   getAllLogEntries,
@@ -14,6 +16,7 @@ import {
   getAllStepTemplates,
   getChronicle,
   putChronicle,
+  putCombat,
   putFellowshipPhase,
   putJourney,
   putOracleTable,
@@ -37,6 +40,7 @@ export interface StateEnvelope {
   journeys: Journey[];
   routes: Route[];
   fellowshipPhases: FellowshipPhase[];
+  combats: Combat[];
 }
 
 export class ImportError extends Error {}
@@ -44,13 +48,14 @@ export class ImportError extends Error {}
 export async function exportState(): Promise<StateEnvelope> {
   const chronicle = await getChronicle();
   if (!chronicle) throw new Error('No chronicle to export — nothing has been created yet.');
-  const [log, oracleTables, stepTemplates, journeys, routes, fellowshipPhases] = await Promise.all([
+  const [log, oracleTables, stepTemplates, journeys, routes, fellowshipPhases, combats] = await Promise.all([
     getAllLogEntries(),
     getAllOracleTables(),
     getAllStepTemplates(),
     getAllJourneys(),
     getAllRoutes(),
     getAllFellowshipPhases(),
+    getAllCombats(),
   ]);
   return {
     format: 'wayfarer-export',
@@ -63,6 +68,7 @@ export async function exportState(): Promise<StateEnvelope> {
     journeys,
     routes,
     fellowshipPhases,
+    combats,
   };
 }
 
@@ -118,5 +124,8 @@ export async function importState(json: string): Promise<void> {
   }
   for (const phase of envelope.fellowshipPhases ?? []) {
     await putFellowshipPhase(phase);
+  }
+  for (const combat of envelope.combats ?? []) {
+    await putCombat(combat);
   }
 }

@@ -1,8 +1,8 @@
 // The step template engine (F3.2, F3.4; PRD's "StepTemplate is the
-// extensibility mechanism" — D2). A journey type — and, later, Fellowship
+// extensibility mechanism" — D2). A journey type — and likewise Fellowship
 // downtime and combat rounds (Phases 4-5) — is an ordered sequence of
 // typed, user-editable steps executed by one generic interpreter
-// (journeyEngine.ts), not hard-coded per-phase logic.
+// (stepRunner.ts), not hard-coded per-phase logic.
 
 import type { ResourceField } from './resources.ts';
 
@@ -48,6 +48,18 @@ export interface PromptStep extends BaseStep {
   message: string;
 }
 
+/**
+ * F5.3/F5.8 — a combat attack. Deliberately configuration-free: the
+ * proficiency, target adversary, Target Number, damage, and Piercing-Blow
+ * call are all live input at run time (they depend on the moment and on
+ * core-rulebook numbers the app doesn't ship), the same way RollStep's
+ * skill is picked live when blank. Only the combat runner renders this
+ * step type; the journey/Fellowship runners offer a skip.
+ */
+export interface AttackStep extends BaseStep {
+  type: 'attack';
+}
+
 export interface ConditionalBranchStep extends BaseStep {
   type: 'conditional-branch';
   /** Skips the next `skipCount` enabled steps when the immediately
@@ -63,6 +75,7 @@ export type StepTemplateStep =
   | TableDrawStep
   | ResourceChangeStep
   | PromptStep
+  | AttackStep
   | ConditionalBranchStep;
 
 export interface StepTemplate {
