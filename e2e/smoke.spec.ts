@@ -6,8 +6,14 @@ import { createHero, openTab } from './helpers.ts';
 // review — this doubles as the "honest look in a real browser" CLAUDE.md
 // asked for.
 
-function shot(page: Page, name: string, projectName: string) {
-  return page.screenshot({ path: `e2e/screenshots/${projectName}-${name}.png`, fullPage: true });
+async function shot(page: Page, name: string, projectName: string) {
+  // Let CSS transitions finish and park the pointer off the UI first.
+  // Without this, captures land mid-transition and misrepresent state —
+  // an early pass had me chasing a "nav highlights the wrong tab" bug
+  // that was only the tab-switch transition frozen at t=0.
+  await page.mouse.move(0, 0);
+  await page.waitForTimeout(400);
+  await page.screenshot({ path: `e2e/screenshots/${projectName}-${name}.png`, fullPage: true });
 }
 
 test('first run: welcome → hero → skill roll lands in the log', async ({ page }, testInfo) => {

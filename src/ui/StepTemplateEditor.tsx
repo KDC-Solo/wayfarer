@@ -36,7 +36,8 @@ export function StepTemplateEditor({ templates, oracleTables, onCreate, onUpdate
 
   return (
     <section className="roll-panel">
-      <h3>Step templates</h3>
+      {/* No heading: the Templates view's own intro already names this
+          panel, and repeating it read as a duplicate title on screen. */}
       <ul>
         {templates.map((t) => (
           <li key={t.id}>
