@@ -13,6 +13,7 @@ export const RESOURCE_FIELD_LABEL: Record<ResourceField, string> = {
 
 interface Props {
   chronicle: Chronicle;
+  onEditSheet: (heroId: string) => void;
   onSetActive: (heroId: string) => void;
   onRemove: (heroId: string) => void;
   onResourceDelta: (heroId: string, field: ResourceField, delta: number) => void;
@@ -24,6 +25,7 @@ interface Props {
 
 export function CompanyOverview({
   chronicle,
+  onEditSheet,
   onSetActive,
   onRemove,
   onResourceDelta,
@@ -43,6 +45,7 @@ export function CompanyOverview({
             hero={hero}
             isActive={hero.id === chronicle.activeHeroId}
             onSetActive={() => onSetActive(hero.id)}
+            onEditSheet={() => onEditSheet(hero.id)}
             onRemove={() => onRemove(hero.id)}
             onResourceDelta={(field, delta) => onResourceDelta(hero.id, field, delta)}
           />
@@ -80,12 +83,14 @@ function HeroCard({
   hero,
   isActive,
   onSetActive,
+  onEditSheet,
   onRemove,
   onResourceDelta,
 }: {
   hero: Hero;
   isActive: boolean;
   onSetActive: () => void;
+  onEditSheet: () => void;
   onRemove: () => void;
   onResourceDelta: (field: ResourceField, delta: number) => void;
 }) {
@@ -103,6 +108,9 @@ function HeroCard({
           title={isActive ? 'Rolls default to this hero' : 'Make this hero active'}
         >
           {isActive ? '● Active' : 'Set active'}
+        </button>
+        <button className="chip" onClick={onEditSheet}>
+          Sheet
         </button>
         <button className="ghost icon" onClick={onRemove} aria-label={`Remove ${hero.name}`}>
           ✕

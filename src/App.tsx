@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { addHero, getActiveHero, removeHero, setActiveHero } from './engine/company.ts';
+import { addHero, getActiveHero, removeHero, replaceHero, setActiveHero } from './engine/company.ts';
 import { createQuickStartHero } from './engine/hero.ts';
 import { advanceYear, createChronicle, currentSessionId, setDiceInputMode, startSession } from './engine/chronicle.ts';
 import {
@@ -72,6 +72,7 @@ import { Nav, type TabId } from './ui/Nav.tsx';
 import { BrandMark } from './ui/BrandMark.tsx';
 import { Welcome } from './ui/Welcome.tsx';
 import { Toast, type ToastMessage } from './ui/Toast.tsx';
+import { HeroSheet } from './ui/HeroSheet.tsx';
 import { requestPersistence } from './engine/storage.ts';
 
 const COMBAT_TEMPLATE_SEEDED_KEY = 'wayfarer.seeded.combat-template';
@@ -115,6 +116,7 @@ export default function App() {
   const [activeCombatId, setActiveCombatId] = useState<string | null>(null);
   const [status, setStatus] = useState<ToastMessage | null>(null);
   const [showHeroForm, setShowHeroForm] = useState(false);
+  const [sheetHeroId, setSheetHeroId] = useState<string | null>(null);
   const [lastResourceChange, setLastResourceChange] = useState<LogEntry | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -242,6 +244,13 @@ export default function App() {
       payload: { action: 'remove', heroName: hero?.name },
     });
     await persist(next, entry);
+  }
+
+  /** F1.1 — the full character sheet, edited after creation. Not logged:
+   * copying your sheet in isn't a play event, it's setup. */
+  async function handleUpdateHero(hero: Hero) {
+    if (!chronicle) return;
+    await persist(replaceHero(chronicle, hero));
   }
 
   async function handleSetActive(heroId: string) {
@@ -542,6 +551,7 @@ export default function App() {
     : null;
 
   const activeDicePack = dicePacks.find((p) => p.id === activeDicePackId) ?? null;
+  const sheetHero = chronicle.company.find((h) => h.id === sheetHeroId) ?? null;
   const hasCompany = chronicle.company.length > 0;
 
   const importControl = (
@@ -612,6 +622,7 @@ export default function App() {
                 )}
                 <CompanyOverview
                   chronicle={chronicle}
+                  onEditSheet={setSheetHeroId}
                   onSetActive={handleSetActive}
                   onRemove={handleRemoveHero}
                   onResourceDelta={handleResourceDelta}
@@ -621,6 +632,9 @@ export default function App() {
                   onAddHero={() => setShowHeroForm(true)}
                 />
                 {showHeroForm && <HeroForm onCreate={handleAddHero} onCancel={() => setShowHeroForm(false)} />}
+                {sheetHero && (
+                  <HeroSheet hero={sheetHero} onChange={handleUpdateHero} onClose={() => setSheetHeroId(null)} />
+                )}
               </>
             )}
 
