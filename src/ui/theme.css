@@ -489,6 +489,39 @@ legend {
   font-weight: 700;
 }
 
+/* Chronicle view (F6.1) — a reading surface, not a data table. */
+.chronicle-list {
+  list-style: none;
+  padding: 0;
+  margin-block: var(--space-4);
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.chronicle-entry {
+  border-block-end: 1px solid var(--border);
+  padding-block-end: var(--space-2);
+  font-size: 0.9rem;
+}
+
+.chronicle-entry .entry-meta {
+  display: block;
+  font-size: 0.72rem;
+  color: var(--fg-muted);
+}
+
+.chronicle-entry .entry-prose {
+  font-family: var(--font-serif);
+  white-space: pre-wrap;
+  margin-block: var(--space-1) 0;
+}
+
+.chronicle-entry.prose {
+  border-inline-start: 3px solid var(--accent);
+  padding-inline-start: var(--space-3);
+}
+
 /* Combat overview (F5.6) — denser than .company-grid so a whole fight fits
    a phone screen without scrolling. */
 .combat-overview {

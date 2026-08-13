@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { addHero, getActiveHero, removeHero, setActiveHero } from './engine/company.ts';
-import { advanceYear, createChronicle, setDiceInputMode } from './engine/chronicle.ts';
+import { advanceYear, createChronicle, currentSessionId, setDiceInputMode, startSession } from './engine/chronicle.ts';
 import {
   changeResource,
   recordOracleAnswer,
@@ -56,6 +56,7 @@ import { FellowshipPlanner } from './ui/FellowshipPlanner.tsx';
 import { FellowshipRunner } from './ui/FellowshipRunner.tsx';
 import { CombatPlanner } from './ui/CombatPlanner.tsx';
 import { CombatRunner } from './ui/CombatRunner.tsx';
+import { ChroniclePanel } from './ui/ChroniclePanel.tsx';
 import { Nav, type TabId } from './ui/Nav.tsx';
 import { BrandMark } from './ui/BrandMark.tsx';
 import { Welcome } from './ui/Welcome.tsx';
@@ -134,11 +135,20 @@ export default function App() {
     refresh().catch((err) => setStatus(`Failed to load: ${String(err)}`));
   }, []);
 
+  /** F6.1 — every entry persisted while a session is open is stamped with
+   * it here, at the single persistence choke point, so the pure action
+   * layer never needs to know about sessions. */
+  function stampSession(entry: LogEntry, c: Chronicle): LogEntry {
+    const sessionId = currentSessionId(c);
+    return entry.sessionId || !sessionId ? entry : { ...entry, sessionId };
+  }
+
   async function persist(next: Chronicle, entry?: LogEntry) {
     await putChronicle(next);
     if (entry) {
-      await appendLogEntry(entry);
-      setLog((l) => [...l, entry]);
+      const stamped = stampSession(entry, next);
+      await appendLogEntry(stamped);
+      setLog((l) => [...l, stamped]);
     }
     setChronicle(next);
   }
@@ -274,13 +284,14 @@ export default function App() {
   async function handleJourneyApply(params: { chronicle: Chronicle; journey: Journey; logEntries: LogEntry[] }) {
     await putChronicle(params.chronicle);
     await putJourney(params.journey);
-    for (const entry of params.logEntries) {
+    const stamped = params.logEntries.map((e) => stampSession(e, params.chronicle));
+    for (const entry of stamped) {
       await appendLogEntry(entry);
     }
     setChronicle(params.chronicle);
     setJourneys((j) => j.map((existing) => (existing.id === params.journey.id ? params.journey : existing)));
-    if (params.logEntries.length > 0) {
-      setLog((l) => [...l, ...params.logEntries]);
+    if (stamped.length > 0) {
+      setLog((l) => [...l, ...stamped]);
     }
   }
 
@@ -290,12 +301,16 @@ export default function App() {
   }
 
   async function handleBeginCombat(combat: Combat) {
+    if (!chronicle) return;
     await putCombat(combat);
-    const entry = createLogEntry({
-      type: 'combat-event',
-      prose: `Combat begins: ${combat.name}.`,
-      journeyId: combat.id,
-    });
+    const entry = stampSession(
+      createLogEntry({
+        type: 'combat-event',
+        prose: `Combat begins: ${combat.name}.`,
+        journeyId: combat.id,
+      }),
+      chronicle,
+    );
     await appendLogEntry(entry);
     setLog((l) => [...l, entry]);
     setCombats((c) => [...c, combat]);
@@ -306,13 +321,14 @@ export default function App() {
   async function handleCombatApply(params: { chronicle: Chronicle; combat: Combat; logEntries: LogEntry[] }) {
     await putChronicle(params.chronicle);
     await putCombat(params.combat);
-    for (const entry of params.logEntries) {
+    const stamped = params.logEntries.map((e) => stampSession(e, params.chronicle));
+    for (const entry of stamped) {
       await appendLogEntry(entry);
     }
     setChronicle(params.chronicle);
     setCombats((c) => c.map((existing) => (existing.id === params.combat.id ? params.combat : existing)));
-    if (params.logEntries.length > 0) {
-      setLog((l) => [...l, ...params.logEntries]);
+    if (stamped.length > 0) {
+      setLog((l) => [...l, ...stamped]);
     }
   }
 
@@ -340,14 +356,31 @@ export default function App() {
   }) {
     await putChronicle(params.chronicle);
     await putFellowshipPhase(params.phase);
-    for (const entry of params.logEntries) {
+    const stamped = params.logEntries.map((e) => stampSession(e, params.chronicle));
+    for (const entry of stamped) {
       await appendLogEntry(entry);
     }
     setChronicle(params.chronicle);
     setFellowshipPhases((p) => p.map((existing) => (existing.id === params.phase.id ? params.phase : existing)));
-    if (params.logEntries.length > 0) {
-      setLog((l) => [...l, ...params.logEntries]);
+    if (stamped.length > 0) {
+      setLog((l) => [...l, ...stamped]);
     }
+  }
+
+  async function handleStartSession() {
+    if (!chronicle) return;
+    const { chronicle: next, sessionId } = startSession(chronicle);
+    const entry = createLogEntry({
+      type: 'system',
+      prose: `Session ${next.sessionList.length} begins.`,
+      sessionId,
+    });
+    await persist(next, entry);
+  }
+
+  async function handleAddProse(prose: string) {
+    if (!chronicle) return;
+    await persist(chronicle, createLogEntry({ type: 'prose', prose }));
   }
 
   async function handleExport() {
@@ -539,6 +572,24 @@ export default function App() {
                   onBegin={handleBeginFellowshipPhase}
                 />
               ))}
+
+            {tab === 'chronicle' && (
+              <>
+                <div className="view-intro">
+                  <h2>Chronicle</h2>
+                  <p>The campaign as it happened — filter it, write in it, take it with you.</p>
+                </div>
+                <ChroniclePanel
+                  chronicle={chronicle}
+                  log={log}
+                  journeys={journeys}
+                  fellowshipPhases={fellowshipPhases}
+                  combats={combats}
+                  onAddProse={handleAddProse}
+                  onStartSession={handleStartSession}
+                />
+              </>
+            )}
 
             {tab === 'templates' && (
               <>

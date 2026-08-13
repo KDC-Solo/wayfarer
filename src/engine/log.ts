@@ -26,7 +26,8 @@ export function createLogEntry(input: NewLogEntryInput): LogEntry {
 }
 
 export interface LogFilter {
-  sessionId?: string;
+  /** null matches entries recorded before any session existed (F6.1). */
+  sessionId?: string | null;
   heroId?: string;
   journeyId?: string;
   type?: LogEntryType;

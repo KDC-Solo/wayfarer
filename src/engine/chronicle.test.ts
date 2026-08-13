@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { advanceYear, createChronicle, setDiceInputMode } from './chronicle.ts';
+import {
+  advanceYear,
+  createChronicle,
+  currentSessionId,
+  sessionNumber,
+  setDiceInputMode,
+  startSession,
+} from './chronicle.ts';
 
 describe('createChronicle', () => {
   it('starts at year 0 with no phases and an empty company', () => {
@@ -15,6 +22,28 @@ describe('setDiceInputMode (F1.10)', () => {
   it('changes only the dice input mode', () => {
     const c = setDiceInputMode(createChronicle(), 'hybrid');
     expect(c.diceInputMode).toBe('hybrid');
+  });
+});
+
+describe('sessions (F6.1)', () => {
+  it('there is no session until one is started', () => {
+    expect(currentSessionId(createChronicle())).toBeNull();
+  });
+
+  it('startSession appends and becomes current; numbering is 1-based', () => {
+    const first = startSession(createChronicle());
+    expect(currentSessionId(first.chronicle)).toBe(first.sessionId);
+    expect(sessionNumber(first.chronicle, first.sessionId)).toBe(1);
+
+    const second = startSession(first.chronicle);
+    expect(currentSessionId(second.chronicle)).toBe(second.sessionId);
+    expect(sessionNumber(second.chronicle, first.sessionId)).toBe(1);
+    expect(sessionNumber(second.chronicle, second.sessionId)).toBe(2);
+    expect(second.chronicle.sessionList).toEqual([first.sessionId, second.sessionId]);
+  });
+
+  it('sessionNumber is null for an unknown id', () => {
+    expect(sessionNumber(createChronicle(), 'nope')).toBeNull();
   });
 });
 

@@ -1,7 +1,7 @@
 # Product Requirements Document
 ## Strider Mode Companion — a solo play assistant for The One Ring 2e
 
-**Version:** 1.5 (development baseline)
+**Version:** 1.6 (development baseline)
 **Status:** Approved for development
 **Last updated:** 13 August 2026
 
@@ -14,6 +14,8 @@
 **Changes since 1.2:** F3.5 clarified — roles are skipped entirely (not just de-emphasised) for a company of one, confirmed directly in Strider Mode rather than inferred from the general solo-adjustment pattern (D11). No numeric journey-procedure values (leg length, Fatigue accrual, roll frequency) were added to F3.3, since those live in the core rulebook, which isn't on file — see D12.
 
 **Changes since 1.3:** F4.3 clarified with the verified "Spiritual Recovery" three-tier mechanic (p.20). F4.4 clarified — "experience" is two separate currencies (Adventure Points, Skill Points), not one generic pool (D13); the app validates spend against whichever pool the player selects rather than assuming which currency pays for which advancement. D14 records why the Fellowship Phase reuses the step-template *interpreter* rather than the `Journey` entity itself.
+
+**Changes since 1.5:** F6.1 clarified with the session model — sessions are boundaries in the log (a start marker appended to the chronicle's session list; every subsequent entry is stamped with the current session id), not an entity with its own store, and there is no explicit "end session" (D17). F6.2/F6.3 implemented as written; F6.4 had already shipped in Milestone 0 and needed no change.
 
 **Changes since 1.4:** Phase 5 clarified against the sources actually on file. F5.1 — the stance list gains Skirmish, Strider Mode's verified solo addition (p.15); the stance→TN mapping itself is core-rulebook content, so it ships blank and is player-entered per combat (D16). F5.2 — the opening-volley count is player-entered (it depends on the distance between combatants, p.15), and close-combat rounds repeat until the player ends the fight. F5.3/F5.4 — weapon damage, the Piercing-Blow trigger, Protection dice, and Injury-rating TNs are all player-entered at the point of use; the app pre-checks the Piercing box from an optional player-entered Feat-die threshold and the player always has the final say. D15 records how the combat round reuses the Phase 3 engine (new `attack` step type, own `Combat` entity over the shared interpreter).
 
@@ -226,7 +228,7 @@ The journey procedure is implemented as a **configurable step template**, not ha
 
 ### Phase 6 — Chronicle and export
 
-**F6.1** Present the full log as a browsable chronicle, filterable by session, journey, hero, and entry type.
+**F6.1** Present the full log as a browsable chronicle, filterable by session, journey, hero, and entry type. Sessions are boundaries in the log: starting one appends an id to the chronicle's session list and stamps every subsequent entry; entries from before the first session filter as "before sessions" (D17).
 
 **F6.2** Allow freeform prose entries interleaved with mechanical entries.
 
@@ -387,3 +389,4 @@ No accounts and no telemetry, so measurement is indirect and qualitative:
 | D14 | The Fellowship Phase reuses the Phase 3 step template engine via a generic interpreter (`stepRunner.ts`), not by reusing the `Journey` entity itself | A Fellowship Phase iterates per hero turn, not per waypoint, and has no roles/land-danger — genuinely different targeting semantics from a journey. Forcing it into the `Journey` shape would have been the wrong kind of reuse; sharing the branch-resolution algorithm (the actual "Phase 3 engine") is the right kind, and is what F4.6 asks for |
 | D15 | Combat (F5.8) is the third consumer of the shared interpreter, via its own `Combat` entity and a new `attack` step type in the `StepTemplateStep` union | Same reasoning as D14: the round loop (opening volleys → repeating close-combat rounds, per hero per round, ended only by player decision) is genuinely new targeting semantics, but the branch-resolution algorithm is shared. The attack step is a real new step *type* (adversary targeting, damage, Piercing flow don't fit any existing step), added to the union exactly as §7 intends — it carries no configuration, since everything about an attack is live input |
 | D16 | Combat ships with blank stance TNs and player-entered damage/Injury/Protection numbers; only Strider Mode p.15 content is encoded | Same reasoning as D12: the base combat procedure and its numbers live in the core rulebook, which isn't on file. What p.15 verifies and the engine encodes: the Skirmish stance's dice modifiers and escape roll, the Gain Ground task, the opening-volley framing, and the adversary-action guidance the default template's prompts cite. Piercing-Blow detection is therefore assisted-but-player-confirmed rather than automatic |
+| D17 | Sessions (F6.1) are log boundaries — a start marker plus per-entry stamping at the persistence choke point — not a stored entity, and there is no explicit "end session" | §7 froze `Chronicle.sessionList` and `LogEntry.sessionId` before sessions had behavior; boundaries satisfy the filter requirement with no new store, keep the action layer pure (App.tsx stamps at its single persistence point), and match how a play journal works — the next session's start is the previous one's end. Revisit only if sessions ever need their own metadata (named sessions, per-session notes) |

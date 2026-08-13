@@ -1,4 +1,4 @@
-export type TabId = 'company' | 'oracle' | 'journey' | 'combat' | 'fellowship' | 'templates';
+export type TabId = 'company' | 'oracle' | 'journey' | 'combat' | 'fellowship' | 'chronicle' | 'templates';
 
 interface TabDef {
   id: TabId;
@@ -12,6 +12,7 @@ const TABS: TabDef[] = [
   { id: 'journey', label: 'Journey', icon: '🗺️' },
   { id: 'combat', label: 'Combat', icon: '⚔️' },
   { id: 'fellowship', label: 'Fellowship', icon: '🏕️' },
+  { id: 'chronicle', label: 'Chronicle', icon: '📜' },
   { id: 'templates', label: 'Templates', icon: '⚙️' },
 ];
 
