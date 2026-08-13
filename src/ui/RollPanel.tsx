@@ -230,6 +230,33 @@ export function RollPanel({
             🎲 Roll
           </button>
 
+          {/* A newcomer meets Feat die, Favour, TN and "sixes" with no
+              way to find out what any of them mean. This is the cheapest
+              possible answer: plain English, folded away once known. */}
+          <details className="roll-options">
+            <summary>What do these mean?</summary>
+            <dl className="glossary">
+              <dt>Skill</dt>
+              <dd>What your hero is attempting. Its rank is how many six-sided dice you roll.</dd>
+              <dt>Attribute</dt>
+              <dd>Strength, Heart or Wits — whichever suits the attempt. It sets the number you need to beat.</dd>
+              <dt>Favour</dt>
+              <dd>
+                Favoured rolls two Feat dice and keeps the better; Ill-favoured keeps the worse. Normal
+                rolls one.
+              </dd>
+              <dt>Feat die</dt>
+              <dd>
+                The twelve-sided die. Two faces are special: the rune is an automatic success, the Eye is
+                the worst result there is.
+              </dd>
+              <dt>Target Number</dt>
+              <dd>What your total must reach to succeed. Leave the override blank and it's worked out for you.</dd>
+              <dt>Sixes</dt>
+              <dd>Each six is a stronger success — two make it a great success, three extraordinary.</dd>
+            </dl>
+          </details>
+
           <details className="roll-options">
             <summary>Options</summary>
             <label>

@@ -13,7 +13,7 @@ const RED_PNG = Buffer.from(
 );
 
 async function makePack(page: import('@playwright/test').Page, name: string) {
-  await openTab(page, 'Templates');
+  await openTab(page, 'Setup');
   await page.getByLabel('New pack name').fill(name);
   await page.getByRole('button', { name: 'Create pack' }).click();
 }
@@ -67,7 +67,7 @@ test('a pack survives a reload and rejects a malformed import', async ({ page })
   await expect(page.getByText('0/18 faces')).toBeVisible();
 
   await page.reload();
-  await openTab(page, 'Templates');
+  await openTab(page, 'Setup');
   await expect(page.getByRole('button', { name: 'Persisted', exact: true })).toBeVisible();
 
   // C4's validation boundary, exercised through the real import path.

@@ -117,7 +117,7 @@ test('fellowship: advance the year and open the first hero turn', async ({ page 
 
 test('templates: the three default templates ship', async ({ page }, testInfo) => {
   await createHero(page);
-  await openTab(page, 'Templates');
+  await openTab(page, 'Setup');
 
   await expect(page.getByRole('button', { name: 'Standard Journey Leg', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Standard Fellowship Phase', exact: true })).toBeVisible();

@@ -1360,3 +1360,82 @@ button.ghost.icon {
   font-size: 0.8rem;
   color: var(--fg-subtle);
 }
+
+/* ---------- plain-language help ---------- */
+
+.glossary {
+  margin: var(--space-2) 0 0;
+  font-size: 0.85rem;
+}
+
+.glossary dt {
+  font-weight: 700;
+  color: var(--fg);
+  margin-top: var(--space-2);
+}
+
+.glossary dd {
+  margin: 2px 0 0;
+  color: var(--fg-muted);
+}
+
+.welcome-split {
+  margin-top: var(--space-5);
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+  gap: var(--space-4);
+  text-align: left;
+}
+
+.welcome-split > div {
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--bg);
+}
+
+.welcome-split strong {
+  display: block;
+  font-family: var(--font-serif);
+  color: var(--fg);
+  margin-bottom: var(--space-2);
+}
+
+.welcome-split ul {
+  margin: 0;
+  padding-inline-start: 1.1em;
+  color: var(--fg-muted);
+  font-size: 0.88rem;
+}
+
+.welcome-split li {
+  margin-bottom: 4px;
+}
+
+/* ---------- first-run orientation ---------- */
+
+.orient {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-elevated));
+}
+
+.orient p {
+  margin: 0 0 var(--space-1);
+  color: var(--fg);
+}
+
+.orient ol {
+  margin: 0;
+  padding-inline-start: 1.2em;
+  color: var(--fg-muted);
+  font-size: 0.88rem;
+}
+
+.orient > div {
+  flex: 1;
+}

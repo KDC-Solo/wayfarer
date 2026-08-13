@@ -100,7 +100,9 @@ export function LorePanel({ loreTables, onUpdate, onLog }: Props) {
 
       {isLoreTableEmpty(table) && !editing && (
         <p role="status">
-          This is the empty skeleton ({table.sourceReference}) — transcribe your own copy via "Edit table."
+          No rulebook text ships with Wayfarer, so this table starts empty ({table.sourceReference}).
+          Consult it anyway — it tells you which row to read, and keeps whatever you type. Or paste a
+          whole section in via "Edit table."
         </p>
       )}
 

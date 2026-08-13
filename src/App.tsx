@@ -104,6 +104,7 @@ function claimInitialSeed(): boolean {
 // Which pack is active is a small setting, so localStorage (PRD §9); the
 // packs themselves are user content and live in IndexedDB.
 const ACTIVE_DICE_PACK_KEY = 'wayfarer.dicePack.active';
+const ORIENTED_KEY = 'wayfarer.oriented';
 
 export default function App() {
   const [tab, setTab] = useState<TabId>('company');
@@ -126,6 +127,7 @@ export default function App() {
   const [status, setStatus] = useState<ToastMessage | null>(null);
   const [showHeroForm, setShowHeroForm] = useState(false);
   const [sheetHeroId, setSheetHeroId] = useState<string | null>(null);
+  const [oriented, setOriented] = useState(() => !!localStorage.getItem(ORIENTED_KEY));
   const [lastResourceChange, setLastResourceChange] = useState<LogEntry | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -657,6 +659,34 @@ export default function App() {
           <div className="view">
             {tab === 'company' && (
               <>
+                {/* Someone arriving from a search may never have played
+                    this game. One card, three lines, dismissed forever. */}
+                {!oriented && (
+                  <div className="orient">
+                    <span aria-hidden="true">👋</span>
+                    <div>
+                      <p>
+                        <strong>New here?</strong> The loop is small:
+                      </p>
+                      <ol>
+                        <li>Pick a skill and press Roll — Wayfarer reads the dice and totals them.</li>
+                        <li>Stuck on what happens next? Ask the Oracle a yes/no question.</li>
+                        <li>Everything you do lands in the Chronicle, ready to read back.</li>
+                      </ol>
+                    </div>
+                    <button
+                      className="ghost"
+                      aria-label="Dismiss introduction"
+                      onClick={() => {
+                        localStorage.setItem(ORIENTED_KEY, '1');
+                        setOriented(true);
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
+
                 {/* The roll comes first: it is the action a player takes
                     dozens of times a session, and it used to sit below a
                     settings toolbar and the roster. */}
@@ -794,8 +824,12 @@ export default function App() {
             {tab === 'templates' && (
               <>
                 <div className="view-intro">
-                  <h2>Step templates</h2>
-                  <p>The same engine drives journeys, combats, and Fellowship phases — edit any of them here.</p>
+                  <h2>Setup</h2>
+                  <p>
+                    The step-by-step procedures Wayfarer walks you through — journeys, combats and
+                    downtime — plus your own dice art. Safe to ignore until you want to change how a
+                    procedure runs.
+                  </p>
                 </div>
                 <StepTemplateEditor
                   templates={stepTemplates}

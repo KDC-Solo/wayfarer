@@ -6,14 +6,15 @@ interface Props {
   onFullSheet: () => void;
 }
 
-// The first thing a new visitor sees, and the only screen whose job is
-// conversion: get them rolling dice in seconds, not filling in a form.
+// The first thing a stranger sees, and its job is to answer three
+// questions before they'll type anything: what is this, is it for me,
+// and what do I need to use it.
 //
-// The one input is the name, because that's the only thing the app can't
-// pick for them. Everything else starts from playable defaults they can
-// overwrite later (createQuickStartHero) — the old path opened a nine
-// field form defaulted to zeros, which made a new player's very first
-// roll mathematically impossible to succeed.
+// The last one matters most and used to be buried in a single line about
+// "bring your own books". Wayfarer ships no licensed content by design
+// (PRD §5), which means the result tables start empty — so a visitor who
+// doesn't own the books needs to know that *before* investing time, and a
+// visitor who does own them needs to know how much works immediately.
 
 export function Welcome({ onQuickStart, onFullSheet }: Props) {
   const [name, setName] = useState('');
@@ -28,8 +29,9 @@ export function Welcome({ onQuickStart, onFullSheet }: Props) {
       <BrandMark className="brand-mark" />
       <h1>The road goes ever on.</h1>
       <p className="lede">
-        A solo companion for <em>The One Ring 2e</em> — dice, oracle, journeys and downtime handled, so
-        your table time stays in the story.
+        Play <em>The One Ring 2e</em> on your own — no group, no Loremaster. Wayfarer rolls the dice,
+        answers the questions a gamemaster normally would, runs your journeys, and writes the whole
+        campaign down as you go.
       </p>
 
       <form className="quickstart" onSubmit={submit}>
@@ -48,7 +50,7 @@ export function Welcome({ onQuickStart, onFullSheet }: Props) {
           </button>
         </div>
         <p className="quickstart-note">
-          Starts with sample stats so you can roll immediately — edit them, or{' '}
+          Starts with sample stats so you can roll straight away — edit them later, or{' '}
           <button type="button" className="linklike" onClick={onFullSheet}>
             enter your character sheet now
           </button>
@@ -56,24 +58,33 @@ export function Welcome({ onQuickStart, onFullSheet }: Props) {
         </p>
       </form>
 
-      <div className="welcome-facts">
+      <div className="welcome-split">
         <div>
-          <strong>Roll your way</strong>
-          <span>The app rolls, you roll, or a hybrid — your physical dice still count.</span>
+          <strong>Works right away</strong>
+          <ul>
+            <li>Dice rolls, read and totalled for you</li>
+            <li>A yes/no oracle for "is the bridge guarded?"</li>
+            <li>Journeys, combat and downtime, step by step</li>
+            <li>A chronicle of every roll, written as you play</li>
+          </ul>
         </div>
         <div>
-          <strong>No Loremaster needed</strong>
-          <span>Ask the oracle yes/no questions and let the tables answer back.</span>
-        </div>
-        <div>
-          <strong>Your chronicle writes itself</strong>
-          <span>Every roll and journey becomes a campaign log worth keeping.</span>
+          <strong>Needs your rulebook</strong>
+          <ul>
+            <li>The result tables ship empty — no licensed text here</li>
+            <li>Fill them by playing: it asks, you read it out once</li>
+            <li>Or paste a whole table in at a time</li>
+            <li>You'll want <em>The One Ring 2e</em> and <em>Strider Mode</em></li>
+          </ul>
         </div>
       </div>
 
       <p className="welcome-fineprint">
-        Works offline · Nothing leaves your device · No account, ever · Bring your own books — no
-        licensed content ships here
+        New to solo roleplaying? You play the hero; the app plays everything else — asking the oracle
+        instead of a gamemaster, and rolling on tables to see what the world does back.
+      </p>
+      <p className="welcome-fineprint">
+        Free · Works offline · Nothing leaves your device · No account, ever
       </p>
     </div>
   );

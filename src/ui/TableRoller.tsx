@@ -130,6 +130,10 @@ export function TableRoller({ tables, onLog, onUpdateTable }: Props) {
                 <strong>{describeRowLabel(table!, rolledKey)}</strong>
                 {table!.sourceReference && <> in {table!.sourceReference}</>}
               </p>
+              <p className="hint">
+                Wayfarer ships no rulebook text, so this table starts empty. Read the result out once
+                and it's yours from then on.
+              </p>
               <label>
                 What does your book say?
                 <input

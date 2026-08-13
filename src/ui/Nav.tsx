@@ -13,7 +13,7 @@ const TABS: TabDef[] = [
   { id: 'combat', label: 'Combat', icon: '⚔️' },
   { id: 'fellowship', label: 'Fellowship', icon: '🏕️' },
   { id: 'chronicle', label: 'Chronicle', icon: '📜' },
-  { id: 'templates', label: 'Templates', icon: '⚙️' },
+  { id: 'templates', label: 'Setup', icon: '⚙️' },
 ];
 
 interface Props {
