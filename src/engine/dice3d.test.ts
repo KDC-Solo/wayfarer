@@ -2,6 +2,9 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import {
   diceAssetPath,
   featFaceFromD12,
+  getDiceBox,
+  markDiceBoxUnavailable,
+  resetDiceBox,
   loadDiceQuality,
   recommendedQuality,
   rollIn3d,
@@ -60,6 +63,21 @@ describe('withTimeout (F7.2 — hanging counts as failing)', () => {
 
   it('resolves null when the promise never settles, so the roll is never stuck', async () => {
     expect(await withTimeout(new Promise(() => {}), 20)).toBeNull();
+  });
+});
+
+describe('markDiceBoxUnavailable (F7.2 — a wedged module costs one roll, not every roll)', () => {
+  it('short-circuits later loads until reset', async () => {
+    resetDiceBox();
+    markDiceBoxUnavailable();
+    // 'low' would normally attempt a load; after the marker it must not.
+    expect(await getDiceBox('low', '#nope')).toBeNull();
+    resetDiceBox();
+  });
+
+  it('off always short-circuits regardless', async () => {
+    resetDiceBox();
+    expect(await getDiceBox('off', '#nope')).toBeNull();
   });
 });
 

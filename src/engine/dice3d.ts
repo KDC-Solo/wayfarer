@@ -141,6 +141,16 @@ export async function getDiceBox(quality: DiceQuality, container: string): Promi
   return boxPromise;
 }
 
+/**
+ * Give up on 3D for the rest of the session. Called when the load times
+ * out rather than throws: without this the pending promise is handed to
+ * every later roll, so a wedged module would cost the player the full
+ * timeout on every single roll instead of just the first one.
+ */
+export function markDiceBoxUnavailable(): void {
+  loadFailed = true;
+}
+
 /** Test seam / "start over" after a failure — never called in normal flow. */
 export function resetDiceBox(): void {
   boxPromise = null;

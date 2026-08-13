@@ -2,6 +2,7 @@ import { useRef, useState } from 'react';
 import {
   getDiceBox,
   loadDiceQuality,
+  markDiceBoxUnavailable,
   recommendedQuality,
   rollIn3d,
   saveDiceQuality,
@@ -38,7 +39,12 @@ export function useDice3d() {
     setRolling(true);
     try {
       const box = await withTimeout(getDiceBox(quality, `#${CONTAINER_ID}`));
-      if (!box) return null;
+      if (!box) {
+        // Timed out (or failed) loading — don't make every later roll
+        // wait out the same timeout.
+        markDiceBoxUnavailable();
+        return null;
+      }
       const result = await withTimeout(rollIn3d(box, featCount, successCount));
       return skippedRef.current ? null : result;
     } finally {

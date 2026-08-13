@@ -63,7 +63,12 @@ test('with 3D on, the simulation renders into a stable canvas and always yields 
   // library never errors" — asserting the latter would be asserting on a
   // third party's flakiness.
   for (let i = 0; i < 3; i++) {
-    await page.getByRole('button', { name: /🎲 Roll|Roll again/ }).click();
+    // Two distinct buttons, two distinct jobs: "Roll again" only returns
+    // the panel to setup, and "🎲 Roll" is what actually throws. Collapsing
+    // them into one regex made this pass locally (where 3D is fast enough
+    // that the phases blur) and fail on CI.
+    if (i > 0) await page.getByRole('button', { name: 'Roll again' }).click();
+    await page.getByRole('button', { name: '🎲 Roll' }).click();
     await expect(page.getByText(/total \d+ vs TN/)).toBeVisible({ timeout: 20000 });
   }
 
