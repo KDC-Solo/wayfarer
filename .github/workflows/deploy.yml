@@ -29,11 +29,31 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Run tests
+      - name: Run unit tests
         run: npx vitest run
 
       - name: Build
         run: npm run build
+
+      # The browser suite gates the deploy too, and runs against the
+      # build produced above (playwright.config.ts serves `vite preview`
+      # when CI is set) — so what's tested is the artifact that ships,
+      # not the dev server.
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Run end-to-end tests
+        run: npx playwright test
+
+      - name: Upload e2e artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            test-results/
+            e2e/screenshots/
+          retention-days: 7
 
       # Idempotent: errors (harmlessly) if the project already exists, which
       # is the steady-state case on every run after the first.

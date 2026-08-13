@@ -11,6 +11,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 The UI got a real visual pass (dark-first design system in `src/ui/theme.css`, tab navigation, a first-run welcome screen) — it's no longer "functional but plain." See "UI/design system" below before adding new screens or components.
 
 Known gaps worth knowing about before extending further:
+- **dice-box wants a root-relative `assetPath`**, not a relative one and not a full URL: it prepends the origin itself, and its web worker can't resolve a leading `./`. Since `vite.config.ts` sets `base: './'` (so the app can be hosted at a sub-path), `import.meta.env.BASE_URL` is `/` in dev but `./` in a build — which is why a wrong value here breaks *only* in production. `diceAssetPath()` resolves it against `document.baseURI` and keeps the pathname; unit tests pin both hosting shapes.
 - **dice-box's physics is intermittently unreliable**: a die can settle cocked, and the library then logs `colliderFaceMap Error: No value found for d12 mesh face -1` and returns an unusable result. `rollIn3d` detects this (face count mismatch) and returns null so the numeric path takes over — which is why `e2e/dice3d.spec.ts` asserts "a result appears every time" rather than "the library never errors." Don't tighten that assertion; it would be asserting on a third party's flakiness.
 - The `DiceTray` must stay mounted for `RollPanel`'s whole life, not just its setup phase — dice-box renders into that container across the phase change, and unmounting it mid-roll wedges the simulation (this was a real bug the browser tests caught; the container is collapsed to zero height when idle instead).
 - Playwright e2e coverage exists (`e2e/smoke.spec.ts`, `npm run test:e2e`): every tab's core loop in a real Chromium against the dev server, run at both desktop and Pixel-7 viewport (N8), including mid-journey reload (N4). Screenshots land in `e2e/screenshots/` (gitignored) — reviewing them is how the "honest look in a real browser" finally happened. The engine-level integration tests (`journeyIntegration`/`combatIntegration`) remain the deep-walk coverage; e2e stays a smoke layer.
@@ -37,7 +38,7 @@ Vite + React + TypeScript PWA, no backend.
 - `npm run dev` — dev server
 - `npm run build` — typecheck (`tsc -b`) + production build (incl. service worker via `vite-plugin-pwa`)
 - `npm test` — Vitest suite (`src/**/*.test.ts`); `npx vitest run -t "<name>"` for a single test. IndexedDB is polyfilled for tests via `fake-indexeddb` (`src/test-setup.ts`) since Vitest runs in a `node` environment.
-- `npm run test:e2e` — Playwright smoke suite (`e2e/`, real Chromium + real IndexedDB, desktop + mobile projects; starts the dev server itself). First run needs `npx playwright install chromium`.
+- `npm run test:e2e` — Playwright suite (`e2e/`, real Chromium + real IndexedDB, desktop + mobile projects; starts its own server). First run needs `npx playwright install chromium`. Locally it runs against the **dev server**; with `CI=1` it runs against the **production build** via `vite preview` — use `CI=1 npx playwright test` before trusting anything build-sensitive (asset paths, the service worker, chunk splitting). The deploy workflow gates on both suites.
 
 ## Repository conventions
 

@@ -48,6 +48,10 @@ test('no 3D assets are fetched until 3D is switched on (F7.2 — lazy)', async (
 });
 
 test('with 3D on, the simulation renders into a stable canvas and always yields a result', async ({ page }) => {
+  // Budget for the worst case this test deliberately tolerates: if the
+  // module can't load, each roll waits out DICE_3D_TIMEOUT_MS (12s)
+  // before falling back, and the point is that a result still appears.
+  test.setTimeout(90_000);
   await createHero(page);
   await page.getByLabel('3D dice').selectOption('high');
 

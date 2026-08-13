@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import {
+  diceAssetPath,
   featFaceFromD12,
   loadDiceQuality,
   recommendedQuality,
@@ -112,5 +113,23 @@ describe('rollIn3d (F7.1/F7.2 — simulation-sourced, failure-tolerant)', () => 
       roll: async () => [{ sides: 12, value: 3 }],
     };
     expect(await rollIn3d(shortCount, 1, 2)).toBeNull();
+  });
+});
+
+describe('diceAssetPath (production base-path resolution)', () => {
+  it('resolves the build-time relative base to a root-relative path', () => {
+    // Two bugs this guards, both production-build-only (dev has
+    // BASE_URL='/'): './assets/...' reached dice-box's worker as the
+    // malformed "http://host:5173./assets/...", and handing it a full
+    // absolute URL instead produced "http://host:5173http://host:5173/...",
+    // because dice-box prepends the origin itself. Either way the wasm
+    // never loaded and every 3D roll fell back after the timeout.
+    expect(diceAssetPath('./', 'http://example.com/')).toBe('/assets/dice-box/');
+    expect(diceAssetPath('/', 'http://example.com/')).toBe('/assets/dice-box/');
+  });
+
+  it('honours sub-path hosting, which is why base is relative in the first place', () => {
+    expect(diceAssetPath('./', 'http://example.com/wayfarer/')).toBe('/wayfarer/assets/dice-box/');
+    expect(diceAssetPath('/wayfarer/', 'http://example.com/')).toBe('/wayfarer/assets/dice-box/');
   });
 });

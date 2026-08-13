@@ -65,6 +65,29 @@ const QUALITY_PROFILES: Record<Exclude<DiceQuality, 'off'>, QualityProfile> = {
   high: { shadowQuality: 'high', scale: 6, enableShadows: true },
 };
 
+/**
+ * Where dice-box fetches its meshes, textures and wasm from — as a
+ * root-relative path, deliberately.
+ *
+ * `vite.config.ts` sets `base: './'` so the app can be hosted at any
+ * path, which makes `import.meta.env.BASE_URL` the relative `./` in a
+ * production build (in dev it is `/`, which is why this only ever broke
+ * when built). dice-box fetches these assets from inside a web worker,
+ * where a leading `./` doesn't resolve against the page — it produced
+ * the malformed `http://localhost:5173./assets/...` and every 3D roll
+ * silently fell back to numeric after the timeout.
+ *
+ * The answer is a *root-relative* path, not a full URL: dice-box
+ * concatenates the origin itself, so handing it an absolute URL just
+ * yields `http://host…http://host/…`. Resolving against
+ * `document.baseURI` and keeping only the pathname gives the worker an
+ * unambiguous path that still carries any sub-path prefix.
+ */
+export function diceAssetPath(baseUrl = import.meta.env.BASE_URL, documentBase?: string): string {
+  const base = documentBase ?? (typeof document !== 'undefined' ? document.baseURI : 'http://localhost/');
+  return new URL(`${baseUrl}assets/dice-box/`, base).pathname;
+}
+
 /** The subset of dice-box's surface we rely on — kept narrow so a library
  * change breaks compilation here rather than at every call site. */
 interface DiceBoxLike {
@@ -97,7 +120,7 @@ export async function getDiceBox(quality: DiceQuality, container: string): Promi
         // deprecated in dice-box 1.1.x and only survives via a compat shim.
         const box = new DiceBox({
           container,
-          assetPath: `${import.meta.env.BASE_URL}assets/dice-box/`,
+          assetPath: diceAssetPath(),
           theme: 'default',
           scale: profile.scale,
           shadowQuality: profile.shadowQuality,

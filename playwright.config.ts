@@ -25,7 +25,15 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: 'npm run dev -- --port 5173 --strictPort',
+    // In CI this suite gates a deploy, so it runs against the actual
+    // production build (`vite preview`) rather than the dev server —
+    // that's what catches build-only breakage: base-path/asset
+    // resolution, the service worker, or a chunk that only splits wrong
+    // in a production build (all of which Phase 7 introduced surface for).
+    // Locally the dev server stays the default for fast iteration.
+    command: process.env.CI
+      ? 'npm run preview -- --port 5173 --strictPort'
+      : 'npm run dev -- --port 5173 --strictPort',
     url: 'http://localhost:5173',
     reuseExistingServer: !process.env.CI,
   },
