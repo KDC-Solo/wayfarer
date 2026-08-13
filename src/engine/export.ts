@@ -117,6 +117,69 @@ export function parseStateEnvelope(json: string): StateEnvelope {
   return envelope;
 }
 
+/**
+ * A *content* import, as opposed to `importState`'s wholesale replace:
+ * merges table content into the tables already present and leaves the
+ * chronicle, log, journeys and everything else untouched. This is what
+ * makes it safe to fill in your tables mid-campaign.
+ *
+ * Matching is by name, deliberately — the app seeds blank skeletons on
+ * first run, so a pack filling "Fortune Table" should populate the
+ * existing skeleton rather than sit beside it as a duplicate. Rows,
+ * roll expression and source reference are taken from the pack; the
+ * local id is kept so step templates that reference a table by id keep
+ * working.
+ */
+export interface ContentPackResult {
+  tablesFilled: number;
+  tablesAdded: number;
+  loreTablesFilled: number;
+}
+
+export async function importContentPack(json: string): Promise<ContentPackResult> {
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(json);
+  } catch {
+    throw new ImportError('File is not valid JSON.');
+  }
+  if (typeof parsed !== 'object' || parsed === null) {
+    throw new ImportError('File is not a Wayfarer content pack.');
+  }
+  const pack = parsed as Partial<StateEnvelope>;
+  const incomingTables = pack.oracleTables ?? [];
+  const incomingLore = pack.loreTables ?? [];
+  if (incomingTables.length === 0 && incomingLore.length === 0) {
+    throw new ImportError('No oracle tables or Lore tables found in this file.');
+  }
+
+  const existing = await getAllOracleTables();
+  const byName = new Map(existing.map((t) => [t.name.trim().toLowerCase(), t]));
+  const result: ContentPackResult = { tablesFilled: 0, tablesAdded: 0, loreTablesFilled: 0 };
+
+  for (const table of incomingTables) {
+    const match = byName.get(table.name.trim().toLowerCase());
+    if (match) {
+      await putOracleTable({ ...table, id: match.id });
+      result.tablesFilled++;
+    } else {
+      await putOracleTable(table);
+      result.tablesAdded++;
+    }
+  }
+
+  const existingLore = await getAllLoreTables();
+  for (const lore of incomingLore) {
+    const match =
+      existingLore.find((l) => l.name.trim().toLowerCase() === lore.name.trim().toLowerCase()) ??
+      existingLore[0];
+    await putLoreTable(match ? { ...lore, id: match.id } : lore);
+    result.loreTablesFilled++;
+  }
+
+  return result;
+}
+
 /** Replaces local state wholesale with the imported envelope. */
 export async function importState(json: string): Promise<void> {
   const envelope = parseStateEnvelope(json);

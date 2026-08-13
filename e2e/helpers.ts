@@ -24,3 +24,22 @@ export async function createHeroFromSheet(page: Page, name = 'Idis') {
 export async function openTab(page: Page, label: string) {
   await page.getByRole('navigation', { name: 'Sections' }).getByRole('button', { name: label }).click();
 }
+
+/**
+ * Pick a table by name. Two traps this avoids: table order comes from
+ * IndexedDB key order (random UUIDs) so indexes are meaningless, and
+ * substring matching would let "Fortune Table" also match "Ill-Fortune
+ * Table" — whichever happened to sort first.
+ */
+export async function selectTable(page: Page, name: string) {
+  const select = page.locator('.roll-panel').filter({ hasText: 'Roll on a table' }).getByLabel('Table');
+  const value = await select.evaluate(
+    (el, wanted) =>
+      Array.from((el as HTMLSelectElement).options).find(
+        (o) => o.textContent?.trim().startsWith(`${wanted} (`),
+      )?.value ?? '',
+    name,
+  );
+  if (!value) throw new Error(`No table option named "${name}"`);
+  await select.selectOption(value);
+}

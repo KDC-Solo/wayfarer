@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { createHero, openTab } from './helpers.ts';
+import { createHero, openTab, selectTable } from './helpers.ts';
 
 // Filling tables from your own book is the app's real onboarding, so it
 // gets browser coverage: the fill-as-you-play path (roll a blank row,
@@ -10,7 +10,7 @@ test('a blank row points at the book and remembers what you type', async ({ page
   await openTab(page, 'Oracle');
 
   const roller = page.locator('.roll-panel').filter({ hasText: 'Roll on a table' });
-  await roller.getByLabel('Table').selectOption({ index: 0 }); // Fortune Table
+  await selectTable(page, 'Fortune Table');
   await roller.getByRole('button', { name: 'Feat die 4' }).click();
 
   // It tells you which row and which page rather than shrugging.

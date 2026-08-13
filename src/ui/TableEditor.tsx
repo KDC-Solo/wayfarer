@@ -15,14 +15,18 @@ interface Props {
   onCreate: (table: OracleTable) => void;
   onUpdate: (table: OracleTable) => void;
   onDelete: (id: string) => void;
+  /** Fills many tables at once from a pack file, merging into the
+   * existing skeletons rather than replacing the campaign. */
+  onImportPack?: (file: File) => void;
 }
 
 // F2.5/C3 — define new tables and edit their rows without leaving the
 // app, via both population paths: direct in-app row editing and bulk
 // paste/file import (BulkImportPanel; format documented in SCHEMAS.md).
 
-export function TableEditor({ tables, onCreate, onUpdate, onDelete }: Props) {
+export function TableEditor({ tables, onCreate, onUpdate, onDelete, onImportPack }: Props) {
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const packRef = useRef<HTMLInputElement>(null);
   const [newName, setNewName] = useState('');
   const [newExpr, setNewExpr] = useState('1d6');
   const [newSource, setNewSource] = useState('');
@@ -47,6 +51,27 @@ export function TableEditor({ tables, onCreate, onUpdate, onDelete }: Props) {
   return (
     <section className="roll-panel">
       <h3>Tables</h3>
+
+      {onImportPack && (
+        <div className="toolbar">
+          <button className="ghost" onClick={() => packRef.current?.click()}>
+            Import table content…
+          </button>
+          <span>Fills these tables from a pack file. Your chronicle is untouched.</span>
+          <input
+            ref={packRef}
+            type="file"
+            accept="application/json"
+            hidden
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) onImportPack(file);
+              e.target.value = '';
+            }}
+          />
+        </div>
+      )}
+
       <ul>
         {tables.map((t) => (
           <li key={t.id}>

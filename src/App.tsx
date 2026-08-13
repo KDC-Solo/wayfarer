@@ -40,7 +40,7 @@ import {
   putRoute,
   putStepTemplate,
 } from './engine/persistence.ts';
-import { exportState, importState, serializeState } from './engine/export.ts';
+import { exportState, importContentPack, importState, serializeState } from './engine/export.ts';
 import type { SkillRollResult } from './engine/dice.ts';
 import type { TellingTableResult } from './engine/tellingTable.ts';
 import type { OracleTable } from './engine/oracleTable.ts';
@@ -74,6 +74,21 @@ import { Welcome } from './ui/Welcome.tsx';
 
 const COMBAT_TEMPLATE_SEEDED_KEY = 'wayfarer.seeded.combat-template';
 const LORE_TABLE_SEEDED_KEY = 'wayfarer.seeded.lore-table';
+const INITIAL_SEED_KEY = 'wayfarer.seeded.initial';
+
+/**
+ * Claims the right to seed default content, synchronously and exactly
+ * once per browser. `refresh()` used to gate on `tables.length === 0`,
+ * which is an *async* read: React's StrictMode double-invokes the mount
+ * effect, both passes saw an empty store, and both seeded — leaving two
+ * of every default table. localStorage is synchronous, so the second
+ * caller loses the race before it can write anything.
+ */
+function claimInitialSeed(): boolean {
+  if (localStorage.getItem(INITIAL_SEED_KEY)) return false;
+  localStorage.setItem(INITIAL_SEED_KEY, '1');
+  return true;
+}
 // Which pack is active is a small setting, so localStorage (PRD §9); the
 // packs themselves are user content and live in IndexedDB.
 const ACTIVE_DICE_PACK_KEY = 'wayfarer.dicePack.active';
@@ -113,14 +128,14 @@ export default function App() {
 
     let tables = await getAllOracleTables();
     let templates = await getAllStepTemplates();
-    if (tables.length === 0) {
+    if (tables.length === 0 && claimInitialSeed()) {
       const { tables: journeyTables, template: journeyTemplate } = defaultJourneyContent();
       tables = [...defaultOracleTables(), ...journeyTables];
       for (const t of tables) await putOracleTable(t);
       const fellowshipTemplate = defaultFellowshipStepTemplate();
       templates = [journeyTemplate, fellowshipTemplate, defaultCombatStepTemplate()];
       for (const t of templates) await putStepTemplate(t);
-    } else if (!localStorage.getItem(COMBAT_TEMPLATE_SEEDED_KEY)) {
+    } else if (tables.length > 0 && !localStorage.getItem(COMBAT_TEMPLATE_SEEDED_KEY)) {
       // Campaigns started before Phase 5 shipped already pass the first-run
       // check above, so the combat template gets its own one-time seed. The
       // marker (localStorage is for small settings, PRD §9) rather than a
@@ -130,6 +145,11 @@ export default function App() {
       templates = [...templates, combatTemplate];
     }
     localStorage.setItem(COMBAT_TEMPLATE_SEEDED_KEY, '1');
+    if (tables.length === 0) {
+      // Lost the seed race — re-read what the winning pass wrote.
+      tables = await getAllOracleTables();
+      templates = await getAllStepTemplates();
+    }
     setOracleTables(tables);
     setStepTemplates(templates);
 
@@ -137,11 +157,13 @@ export default function App() {
     // skeleton appears once for campaigns that predate it.
     let loadedLoreTables = await getAllLoreTables();
     if (loadedLoreTables.length === 0 && !localStorage.getItem(LORE_TABLE_SEEDED_KEY)) {
+      localStorage.setItem(LORE_TABLE_SEEDED_KEY, '1');
       const loreTable = createLoreTable();
       await putLoreTable(loreTable);
       loadedLoreTables = [loreTable];
+    } else if (loadedLoreTables.length === 0) {
+      loadedLoreTables = await getAllLoreTables();
     }
-    localStorage.setItem(LORE_TABLE_SEEDED_KEY, '1');
     setLoreTables(loadedLoreTables);
 
     setDicePacks(await getAllDicePacks());
@@ -473,6 +495,21 @@ export default function App() {
     URL.revokeObjectURL(url);
   }
 
+  async function handleImportPack(file: File) {
+    try {
+      const r = await importContentPack(await file.text());
+      await refresh();
+      const bits = [
+        r.tablesFilled && `filled ${r.tablesFilled} tables`,
+        r.tablesAdded && `added ${r.tablesAdded}`,
+        r.loreTablesFilled && 'filled the Lore Table',
+      ].filter(Boolean);
+      setStatus(`Table content imported — ${bits.join(', ')}.`);
+    } catch (err) {
+      setStatus(`Import failed: ${err instanceof Error ? err.message : String(err)}`);
+    }
+  }
+
   async function handleImportFile(file: File) {
     try {
       await importState(await file.text());
@@ -599,6 +636,7 @@ export default function App() {
                   onCreate={handleCreateTable}
                   onUpdate={handleUpdateTable}
                   onDelete={handleDeleteTable}
+                  onImportPack={handleImportPack}
                 />
               </>
             )}
