@@ -113,6 +113,7 @@ export function describeLogEntry(entry: LogEntry, ctx: LogRenderContext): string
     // entry.prose separately should skip the description for them (see
     // isProseOnly).
     case 'prose':
+    case 'eye-awareness':
     case 'journey-event':
     case 'fellowship-event':
     case 'combat-event':
@@ -129,6 +130,7 @@ export function isProseOnly(entry: LogEntry): boolean {
     entry.type === 'journey-event' ||
     entry.type === 'fellowship-event' ||
     entry.type === 'combat-event' ||
+    entry.type === 'eye-awareness' ||
     entry.type === 'system'
   );
 }
@@ -142,5 +144,6 @@ export const LOG_ENTRY_TYPE_LABEL: Record<LogEntry['type'], string> = {
   'journey-event': 'Journey events',
   'fellowship-event': 'Fellowship events',
   'combat-event': 'Combat events',
+  'eye-awareness': 'The Eye',
   system: 'System',
 };

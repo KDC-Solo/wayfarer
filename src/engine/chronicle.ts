@@ -1,3 +1,4 @@
+import { createEyeAwareness, resetEyeScore } from './eyeAwareness.ts';
 import { SCHEMA_VERSION, type Chronicle, type DiceInputMode } from './types.ts';
 
 export function createChronicle(): Chronicle {
@@ -12,6 +13,7 @@ export function createChronicle(): Chronicle {
     activeHeroId: null,
     diceInputMode: 'app-rolls',
     sessionList: [],
+    eyeAwareness: createEyeAwareness(),
   };
 }
 
@@ -48,7 +50,18 @@ export function setDiceInputMode(chronicle: Chronicle, mode: DiceInputMode): Chr
   return { ...chronicle, diceInputMode: mode };
 }
 
-/** F4.1 — opening a Fellowship Phase advances the chronicle by one year. */
+/**
+ * F4.1 — opening a Fellowship Phase advances the chronicle by one year.
+ * Strider Mode p.13: Eye Awareness doesn't rise during a Fellowship
+ * phase and resets to its starting value for the Adventure phase that
+ * follows, so the reset rides along here.
+ */
 export function advanceYear(chronicle: Chronicle): Chronicle {
-  return { ...chronicle, currentYear: chronicle.currentYear + 1, phaseCount: chronicle.phaseCount + 1 };
+  const eye = chronicle.eyeAwareness;
+  return {
+    ...chronicle,
+    currentYear: chronicle.currentYear + 1,
+    phaseCount: chronicle.phaseCount + 1,
+    eyeAwareness: eye ? resetEyeScore(eye) : eye,
+  };
 }

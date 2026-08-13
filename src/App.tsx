@@ -73,6 +73,15 @@ import { BrandMark } from './ui/BrandMark.tsx';
 import { Welcome } from './ui/Welcome.tsx';
 import { Toast, type ToastMessage } from './ui/Toast.tsx';
 import { HeroSheet } from './ui/HeroSheet.tsx';
+import { EyePanel } from './ui/EyePanel.tsx';
+import {
+  createEyeAwareness,
+  eyeIncreaseForRoll,
+  huntThreshold,
+  resetEyeScore,
+  adjustEyeScore,
+  type EyeAwarenessState,
+} from './engine/eyeAwareness.ts';
 import { requestPersistence } from './engine/storage.ts';
 
 const COMBAT_TEMPLATE_SEEDED_KEY = 'wayfarer.seeded.combat-template';
@@ -292,7 +301,47 @@ export default function App() {
     const activeHero = getActiveHero(chronicle);
     if (!activeHero) return;
     const entry = recordSkillRoll(activeHero.id, params.skillName, params.result, params.inputMode);
+
+    // Strider Mode p.13: an Eye on a roll outside combat raises Eye
+    // Awareness by 1, win or lose. Rolls made from this panel are always
+    // outside combat — the combat runner has its own path.
+    const eye = chronicle.eyeAwareness;
+    const increase = eye?.enabled ? eyeIncreaseForRoll({ eye: params.result.eye, inCombat: false }) : 0;
+    if (eye && increase > 0) {
+      const next = adjustEyeScore(eye, increase);
+      await persist({ ...chronicle, eyeAwareness: next }, entry);
+      await appendEyeEntry(
+        `The Eye stirs — Eye Awareness ${eye.score} → ${next.score} (threshold ${huntThreshold(next)}).`,
+      );
+      return;
+    }
     await persist(chronicle, entry);
+  }
+
+  async function appendEyeEntry(prose: string) {
+    if (!chronicle) return;
+    const entry = stampSession(createLogEntry({ type: 'eye-awareness', prose }), chronicle);
+    await appendLogEntry(entry);
+    setLog((l) => [...l, entry]);
+  }
+
+  async function handleEyeChange(next: EyeAwarenessState) {
+    if (!chronicle) return;
+    await persist({ ...chronicle, eyeAwareness: next });
+  }
+
+  /** p.14 — face the episode, then reset to the starting value. */
+  async function handleRevelation() {
+    if (!chronicle?.eyeAwareness) return;
+    const next = resetEyeScore(chronicle.eyeAwareness);
+    await persist({ ...chronicle, eyeAwareness: next });
+    await appendEyeEntry(
+      `A Revelation Episode is faced. Eye Awareness resets to ${next.score}.`,
+    );
+    setStatus({
+      tone: 'success',
+      text: 'Revelation Episode logged — roll on the Revelation Episode Table for what befalls you.',
+    });
   }
 
   async function handleOracleLog(result: TellingTableResult, prose: string) {
@@ -630,6 +679,11 @@ export default function App() {
                   canUndo={lastResourceChange !== null}
                   onDiceModeChange={handleDiceModeChange}
                   onAddHero={() => setShowHeroForm(true)}
+                />
+                <EyePanel
+                  state={chronicle.eyeAwareness ?? createEyeAwareness()}
+                  onChange={handleEyeChange}
+                  onRevelation={handleRevelation}
                 />
                 {showHeroForm && <HeroForm onCreate={handleAddHero} onCancel={() => setShowHeroForm(false)} />}
                 {sheetHero && (

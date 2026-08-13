@@ -1344,3 +1344,19 @@ button.ghost.icon {
   padding: 0;
   border: none;
 }
+
+/* ---------- the Eye ---------- */
+
+.gauge.tone-eye .gauge-fill {
+  background: var(--danger);
+}
+
+.eye-panel.is-due {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 1px var(--danger);
+}
+
+.hint {
+  font-size: 0.8rem;
+  color: var(--fg-subtle);
+}

@@ -1,5 +1,7 @@
 // Core data model — PRD §7.
 
+import type { EyeAwarenessState } from './eyeAwareness.ts';
+
 export type DiceInputMode = 'app-rolls' | 'player-rolls' | 'hybrid';
 
 export interface Attributes {
@@ -82,6 +84,9 @@ export interface Chronicle {
   diceInputMode: DiceInputMode;
   /** Session ids, most recent last. Sessions themselves aren't modeled yet. */
   sessionList: string[];
+  /** The Eye of Mordor (Strider Mode p.13-14). Optional in the book, so
+   * opt-in here; absent on chronicles created before it existed. */
+  eyeAwareness?: EyeAwarenessState;
 }
 
 export type LogEntryType =
@@ -93,6 +98,7 @@ export type LogEntryType =
   | 'journey-event'
   | 'fellowship-event'
   | 'combat-event'
+  | 'eye-awareness'
   | 'system';
 
 /**
@@ -118,7 +124,7 @@ export interface LogEntry {
   sessionId: string | null;
 }
 
-// Bumped for dice texture packs (F7.4). Backwards compatible with
-// versions 5-7: new Hero fields are optional, and combats/loreTables/
-// dicePacks simply may be absent from older exports.
-export const SCHEMA_VERSION = 8;
+// Bumped for the Eye of Mordor tracker (F8.x). Backwards compatible with
+// versions 5-8: every field added since 5 is optional, and newer
+// collections simply may be absent from older exports.
+export const SCHEMA_VERSION = 9;

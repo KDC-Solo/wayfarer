@@ -1,7 +1,7 @@
 # Product Requirements Document
 ## Strider Mode Companion — a solo play assistant for The One Ring 2e
 
-**Version:** 1.9 (development baseline)
+**Version:** 2.0 (development baseline)
 **Status:** Approved for development
 **Last updated:** 13 August 2026
 
@@ -14,6 +14,8 @@
 **Changes since 1.2:** F3.5 clarified — roles are skipped entirely (not just de-emphasised) for a company of one, confirmed directly in Strider Mode rather than inferred from the general solo-adjustment pattern (D11). No numeric journey-procedure values (leg length, Fatigue accrual, roll frequency) were added to F3.3, since those live in the core rulebook, which isn't on file — see D12.
 
 **Changes since 1.3:** F4.3 clarified with the verified "Spiritual Recovery" three-tier mechanic (p.20). F4.4 clarified — "experience" is two separate currencies (Adventure Points, Skill Points), not one generic pool (D13); the app validates spend against whichever pool the player selects rather than assuming which currency pays for which advancement. D14 records why the Fellowship Phase reuses the step-template *interpreter* rather than the `Journey` entity itself.
+
+**Changes since 1.9:** **A requirement gap was found and closed.** The Eye of Mordor — Eye Awareness, the Hunt threshold, and the Revelation Episode it triggers (Strider Mode p.13-14) — is the supplement's signature solo mechanic and appeared nowhere in this document, so it was never built. The shipped Fortune/Ill-Fortune tables instruct the player to raise and lower a score the app could not track. Added as **Phase 8 / F8.1-F8.5** below, and D21 records what is encoded versus left to the player.
 
 **Changes since 1.8:** F7.4 built and clarified. Packs are authored, validated, stored, exported, and published as a schema (`SCHEMAS.md`), and are applied to the **tap-selection dice** used in player-rolls/hybrid mode. They are *not* applied to the 3D dice: that renderer maps one texture atlas over the die mesh with an undocumented UV layout, so per-face images cannot reach it without reverse-engineering that layout (D20). With that, every requirement in the PRD is implemented.
 
@@ -242,6 +244,20 @@ The journey procedure is implemented as a **configurable step template**, not ha
 
 **F6.4** Export and import complete application state (company, chronicle, tables, step templates, dice packs) as a single JSON file.
 
+### Phase 8 — The Eye of Mordor
+
+Strider Mode p.13-14. Optional in the book ("recommended for use with Strider Mode"), therefore opt-in per chronicle — but once enabled the app does the bookkeeping rather than reminding the player to.
+
+**F8.1** Track an **Eye Awareness** score per chronicle, adjustable by hand at any time, with the starting value entered by the player (its derivation is core-rulebook content whose inputs — culture, famous items — this app does not model).
+
+**F8.2** Derive the **Hunt threshold** from the region traversed (Border Land 18, Wild Land 16, Dark Land 14 — p.13, verified) plus a player-entered Hunt modifier standing in for p.13's Hunt Modifiers Table, whose entries are judgement calls rather than lookups.
+
+**F8.3** Raise Eye Awareness automatically per p.13: by 1 whenever a roll **outside combat** shows the Eye, whether it succeeded or failed, and by the amount of any Shadow points gained outside combat. Rolls inside combat never raise it.
+
+**F8.4** Signal when a **Revelation Episode** is due (score ≥ threshold), and on facing it reset the score to its starting value (p.14).
+
+**F8.5** Reset Eye Awareness to its starting value when a Fellowship phase advances the year — p.13: the score does not increase during a Fellowship phase and resets for the Adventure phase that follows.
+
 ### Phase 7 — 3D dice (optional module)
 
 Polish, not function. Nothing in Phases 1–6 may depend on this module.
@@ -395,6 +411,7 @@ No accounts and no telemetry, so measurement is indirect and qualitative:
 | D14 | The Fellowship Phase reuses the Phase 3 step template engine via a generic interpreter (`stepRunner.ts`), not by reusing the `Journey` entity itself | A Fellowship Phase iterates per hero turn, not per waypoint, and has no roles/land-danger — genuinely different targeting semantics from a journey. Forcing it into the `Journey` shape would have been the wrong kind of reuse; sharing the branch-resolution algorithm (the actual "Phase 3 engine") is the right kind, and is what F4.6 asks for |
 | D15 | Combat (F5.8) is the third consumer of the shared interpreter, via its own `Combat` entity and a new `attack` step type in the `StepTemplateStep` union | Same reasoning as D14: the round loop (opening volleys → repeating close-combat rounds, per hero per round, ended only by player decision) is genuinely new targeting semantics, but the branch-resolution algorithm is shared. The attack step is a real new step *type* (adversary targeting, damage, Piercing flow don't fit any existing step), added to the union exactly as §7 intends — it carries no configuration, since everything about an attack is live input |
 | D16 | Combat ships with blank stance TNs and player-entered damage/Injury/Protection numbers; only Strider Mode p.15 content is encoded | Same reasoning as D12: the base combat procedure and its numbers live in the core rulebook, which isn't on file. What p.15 verifies and the engine encodes: the Skirmish stance's dice modifiers and escape roll, the Gain Ground task, the opening-volley framing, and the adversary-action guidance the default template's prompts cite. Piercing-Blow detection is therefore assisted-but-player-confirmed rather than automatic |
+| D21 | The Eye of Mordor (F8.x) encodes only the region thresholds and the increase/reset triggers; the starting score and Hunt modifiers are player-entered | The three region thresholds and the trigger rules are procedural mechanics of the same kind already encoded from this supplement (Experience Milestones p.21, Spiritual Recovery p.20), not narrative content — the same reasoning as D8/D9. What is *not* encoded is anything whose derivation lives in the core rulebook or depends on data the app doesn't model: the starting score depends on culture and famous items, and the Hunt modifiers are situational judgements. Those are entered by the player, so the app never guesses at values it cannot verify |
 | D20 | Dice packs (F7.4) are applied to the 2D tap-selection dice, not to the 3D simulation | dice-box renders faces from a single texture atlas over a mesh whose UV layout is undocumented, so routing 18 arbitrary user images to individual faces would mean reverse-engineering that layout and regenerating an atlas per pack — fragile, and gated on a library internal that can change. The tap-selection faces are also where the art is seen most: they're what a player actually looks at while entering physical dice results at the table. The pack schema is renderer-agnostic, so 3D face art later consumes the same packs |
 | D18 | The 3D Feat die is the stock numbered d12 with faces 11/12 read as Eye/rune, not a custom mesh | The evaluation §9 asked for came out favourably — dice-box themes do accept custom meshes — but F7.3 forbids licensed symbols anyway, so generic geometry is not a compromise here, it is the requirement. Reading two numeric faces as the special ones keeps all TOR meaning in our own code (`dice.ts` stays the sole owner of what a Feat face means) and avoids custom UVs entirely |
 | D19 | The 3D dice module defaults to off and is opt-in, rather than defaulting to a capability-derived quality level | The module is ~3 MB of chunks and wasm. Defaulting it on would make every first roll a multi-megabyte download for a feature the PRD itself calls "polish, not function," contradicting N1/N6 and Phase 7's own "never a functional dependency." The capability threshold F7.5 asks for still exists — it marks the suggested level in the picker. Its assets are runtime-cached, not precached, for the same reason (F7.6 satisfied without taxing users who never enable it) |
