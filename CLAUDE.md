@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project status
 
-**Every PRD milestone (0 through 7) is built**, with one named exception: F7.4 (user-supplied dice texture packs) is deliberately deferred — see below.
+**Every PRD milestone (0 through 7) is built, and every numbered requirement is implemented.** F7.4 (dice packs) landed applied to the 2D tap-selection dice rather than the 3D simulation — see D20 and the note below.
 
 **Milestones 0 through 5 are built.** Foundations, Phase 1 (hero/company/dice engine/input modes), Phase 2 (the oracle), Phase 3 (the step template engine + journey execution — "the differentiator," PRD §10), Phase 4 (Fellowship Phase: year advance, per-hero downtime steps, Adventure/Skill Point milestones and spending, patron errand), Phase 5 (combat: stances incl. the verified Skirmish stance, opening volleys → rounds, attacks with Piercing Blow → Protection → Wounded flow, adversary tracking — see D15/D16), and Phase 6 (chronicle: sessions, filterable log view, interleaved prose, Markdown export — see D17). Phase 7 (optional 3D dice) is built too: `@3d-dice/dice-box` lazy-loaded behind an opt-in setting, generic dice only (D18/D19).
 
@@ -57,6 +57,7 @@ Vite + React + TypeScript PWA, no backend.
   - `dice.ts` — the skill-roll engine (F1.6–F1.9). `resolveSkillRoll` is a pure function over *already-known* face values — it doesn't roll dice itself. That split is what makes F1.13 hold (interpretation/logging is identical across input modes; only where the face values come from differs): `rollFeatDie`/`rollSuccessDie` generate them for app-rolls mode, while `RollPanel.tsx` collects them via tap-selection for player-rolls/hybrid. `describeRollRequirement` is what F1.11 renders before any input is taken.
   - `resources.ts`, `actions.ts` — resource deltas and the action layer that ties dice/resource/company/oracle changes to a `LogEntry` (F1.16, F2.1/F2.2/F2.4). `actions.ts` functions are pure (chronicle/args in, `{chronicle, logEntry}` or just `logEntry` out) — callers persist the result; this is what keeps the engine unit-testable without a fake IndexedDB in most tests (only `persistence.test.ts`/`export.test.ts` need `fake-indexeddb`).
   - `dice3d.ts` — Phase 7's optional 3D module (`@3d-dice/dice-box`, lazy `import()`). **Nothing outside it may depend on it**: `getDiceBox`/`rollIn3d`/`withTimeout` all resolve to `null` rather than throwing, and `RollPanel` treats null as "roll numerically," so the roll path works with the module off, missing, broken, hung, or skipped mid-animation. The Feat die is dice-box's stock numbered d12 with faces 11/12 read as Eye/rune (D18 — no custom mesh, no licensed symbols). Default is **off** (D19); assets are runtime-cached by the service worker, never precached, so users who never enable it pay nothing.
+  - `dicePack.ts` — F7.4: user-authored face art (`DicePack`, 18 face keys, sparse map of face → image data URL). `validateDicePack` is the trust boundary for third-party packs (C4) — unknown face keys and non-image/remote URLs are rejected, not ignored. Packs are decoration: `faceArt` returns null for anything unmapped and every caller falls back to the plain numeral, so a missing or half-finished pack can never affect a roll. Applied by `DicePickers.tsx`; **not** applied to the 3D dice (D20 — dice-box uses one texture atlas with an undocumented UV layout).
   - `random.ts` — the one shared RNG primitive (`crypto.getRandomValues`-backed `randomInt`); `dice.ts` and `diceExpression.ts` both build on it rather than duplicating.
   - `diceExpression.ts` — parses/rolls generic "NdM±X" strings (used by user-defined tables' `rollExpression`, F2.4/F2.5).
   - `loreTable.ts` — the Lore Table (p.11-12): a two-die oracle (Feat die → section, Success die → row) with three consultable columns. Own entity + store, same reasoning as the Telling Table's own module — but unlike it, this is user *content*, so it persists, exports (`loreTables`), and has an editor. `consultLoreTable` returns only the asked-for columns and flags blanks for manual fallback (F2.6).
@@ -129,7 +130,7 @@ Implementation is meant to proceed in this order; each milestone should be indep
 3. Phase 3 — journey engine + step template engine (**the differentiator** — the most expensive milestone and the reason the product exists; don't let Milestones 1–2 expand to fill the schedule). **Done.**
 4. Phases 4–5 — Fellowship phase and combat, built as step templates reusing the Phase 3 engine. **Both done.**
 5. Phase 6 — chronicle browsing and export. **Done.**
-6. Phase 7 — optional 3D dice module. **Done, except F7.4 (user texture packs), deferred.**
+6. Phase 7 — optional 3D dice module. **Done** (F7.4's packs drive the 2D tap-selection faces, not the 3D dice — D20).
 
 Note: the table-entry/import interface (needed for Phase 2) should be prototyped early, since its outcome determines onboarding design before the Phase 3 step template editor locks in.
 

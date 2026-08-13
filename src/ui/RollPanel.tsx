@@ -13,6 +13,7 @@ import {
 import { deriveHeroStates } from '../engine/hero.ts';
 import type { DiceInputMode, Hero } from '../engine/types.ts';
 import { DiceQualityControl, DiceTray, useDice3d } from './DiceTray.tsx';
+import type { DicePack } from '../engine/dicePack.ts';
 
 type AttributeName = keyof Hero['attributes'];
 import { FeatDiePicker, SuccessDiePicker } from './DicePickers.tsx';
@@ -41,6 +42,9 @@ interface Props {
   /** Success-dice adjustment from circumstances — e.g. Skirmish stance's
    * lost (1d) on ranged attacks (Strider Mode p.15). */
   successDiceDelta?: number;
+  /** F7.4 — the player's own face art for the tap-selection dice. Purely
+   * decorative; null (the default) draws plain numerals. */
+  dicePack?: DicePack | null;
 }
 
 type Phase =
@@ -59,6 +63,7 @@ export function RollPanel({
   skillLabel,
   initialTargetNumber,
   successDiceDelta,
+  dicePack = null,
 }: Props) {
   const rankPool = skillOptions ?? hero.skills;
   const [skillName, setSkillName] = useState<string>(
@@ -241,12 +246,20 @@ export function RollPanel({
             {phase.requirement.favourMode !== 'normal' && ` (${phase.requirement.favourMode})`}
           </p>
           {phase.featDice.length < phase.requirement.featDiceCount && (
-            <FeatDiePicker label={`Feat die ${phase.featDice.length + 1}`} onSelect={addFeatDie} />
+            <FeatDiePicker
+              label={`Feat die ${phase.featDice.length + 1}`}
+              onSelect={addFeatDie}
+              dicePack={dicePack}
+            />
           )}
           {diceInputMode === 'player-rolls' &&
             phase.featDice.length >= phase.requirement.featDiceCount &&
             phase.successDice.length < phase.requirement.successDiceCount && (
-              <SuccessDiePicker index={phase.successDice.length} onSelect={addSuccessDie} />
+              <SuccessDiePicker
+                index={phase.successDice.length}
+                onSelect={addSuccessDie}
+                dicePack={dicePack}
+              />
             )}
         </>
       )}

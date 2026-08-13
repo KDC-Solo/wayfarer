@@ -1,14 +1,44 @@
 import type { FeatDieFace, SuccessDieFace } from '../engine/dice.ts';
+import { faceArt, featFaceKey, successFaceKey, type DicePack } from '../engine/dicePack.ts';
 
 // F1.12 — tap-selection rather than free text entry, including the two
 // special Feat die faces.
+//
+// F7.4 — when the player has a dice pack active, their own face art
+// appears on these buttons. It is decoration only: the label stays on
+// the button for accessibility and for any face they haven't drawn, so
+// an absent or half-finished pack changes nothing functionally.
+
+function FaceButton({
+  pack,
+  faceKey,
+  label,
+  ariaLabel,
+  onClick,
+}: {
+  pack: DicePack | null;
+  faceKey: ReturnType<typeof featFaceKey>;
+  label: string;
+  ariaLabel: string;
+  onClick: () => void;
+}) {
+  const art = faceArt(pack, faceKey);
+  return (
+    <button onClick={onClick} aria-label={ariaLabel} className={art ? 'die-face art' : 'die-face'}>
+      {art && <img src={art} alt="" aria-hidden="true" />}
+      <span>{label}</span>
+    </button>
+  );
+}
 
 export function FeatDiePicker({
   onSelect,
   label,
+  dicePack = null,
 }: {
   onSelect: (face: FeatDieFace) => void;
   label: string;
+  dicePack?: DicePack | null;
 }) {
   const numbers: FeatDieFace[] = Array.from({ length: 10 }, (_, i) => i + 1);
   return (
@@ -16,16 +46,29 @@ export function FeatDiePicker({
       <legend>{label} — tap the Feat die (d12) face rolled</legend>
       <div className="die-grid">
         {numbers.map((n) => (
-          <button key={n} onClick={() => onSelect(n)} aria-label={`Feat die ${n}`}>
-            {n}
-          </button>
+          <FaceButton
+            key={n}
+            pack={dicePack}
+            faceKey={featFaceKey(n as number)}
+            label={String(n)}
+            ariaLabel={`Feat die ${n}`}
+            onClick={() => onSelect(n)}
+          />
         ))}
-        <button onClick={() => onSelect('eye')} aria-label="Eye of Sauron">
-          Eye
-        </button>
-        <button onClick={() => onSelect('rune')} aria-label="Gandalf rune">
-          Rune
-        </button>
+        <FaceButton
+          pack={dicePack}
+          faceKey={featFaceKey('eye')}
+          label="Eye"
+          ariaLabel="Eye of Sauron"
+          onClick={() => onSelect('eye')}
+        />
+        <FaceButton
+          pack={dicePack}
+          faceKey={featFaceKey('rune')}
+          label="Rune"
+          ariaLabel="Gandalf rune"
+          onClick={() => onSelect('rune')}
+        />
       </div>
     </fieldset>
   );
@@ -34,9 +77,11 @@ export function FeatDiePicker({
 export function SuccessDiePicker({
   index,
   onSelect,
+  dicePack = null,
 }: {
   index: number;
   onSelect: (face: SuccessDieFace) => void;
+  dicePack?: DicePack | null;
 }) {
   const faces: SuccessDieFace[] = [1, 2, 3, 4, 5, 6];
   return (
@@ -44,9 +89,14 @@ export function SuccessDiePicker({
       <legend>Success die #{index + 1} (d6) — tap the face rolled</legend>
       <div className="die-grid">
         {faces.map((f) => (
-          <button key={f} onClick={() => onSelect(f)} aria-label={`Success die ${f}`}>
-            {f}
-          </button>
+          <FaceButton
+            key={f}
+            pack={dicePack}
+            faceKey={successFaceKey(f)}
+            label={String(f)}
+            ariaLabel={`Success die ${f}`}
+            onClick={() => onSelect(f)}
+          />
         ))}
       </div>
     </fieldset>

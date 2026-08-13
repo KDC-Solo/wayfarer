@@ -118,7 +118,7 @@ export interface LogEntry {
   sessionId: string | null;
 }
 
-// Bumped for the Lore Table entity. Backwards compatible with version-5/6
-// data: new Hero fields are optional and combats/loreTables simply may be
-// absent from older exports.
-export const SCHEMA_VERSION = 7;
+// Bumped for dice texture packs (F7.4). Backwards compatible with
+// versions 5-7: new Hero fields are optional, and combats/loreTables/
+// dicePacks simply may be absent from older exports.
+export const SCHEMA_VERSION = 8;

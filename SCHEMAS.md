@@ -1,6 +1,6 @@
 # Wayfarer content schemas
 
-**Contract version: 7** (matches `schemaVersion` in exports; source of truth: `src/engine/types.ts`)
+**Contract version: 8** (matches `schemaVersion` in exports; source of truth: `src/engine/types.ts`)
 
 This document is the stable public contract PRD requirement **C4** promises: everything a
 third party needs to author content packs — oracle tables, step templates, or full state
@@ -114,7 +114,8 @@ The Export button writes one JSON document:
   "routes": [],
   "fellowshipPhases": [],
   "combats": [],                    // absent in pre-6 exports; readers default to []
-  "loreTables": []                  // absent in pre-7 exports; readers default to []
+  "loreTables": [],                 // absent in pre-7 exports; readers default to []
+  "dicePacks": []                   // absent in pre-8 exports; readers default to []
 }
 ```
 
@@ -123,10 +124,40 @@ practical envelope is `oracleTables` + `stepTemplates`; the other collections ma
 — but note that importing an envelope replaces those too, so distribute content packs as
 tables/templates JSON for now and expect a dedicated pack-import path in a future version.
 
-## Dice texture packs
+## Dice texture pack
 
-**Not yet published.** The 3D dice module (PRD Phase 7) ships with generic dice only — a
-stock numbered d12 read as the Feat die (faces 11 and 12 are the Eye and the rune) and a
-numbered d6 for Success dice. User-supplied texture packs (F7.4) are deferred; when they
-land, the export envelope gains an optional `dicePacks` collection rather than changing any
-field documented above, so packs authored against contract 7 keep working.
+A pack is the player's own face art (F7.4). It is a standalone JSON document — the editor
+imports and exports one directly — and also travels inside the full-state envelope's
+`dicePacks` collection.
+
+```jsonc
+{
+  "id": "any-unique-string",
+  "name": "Hand-inked",
+  "createdAt": "ISO-8601",
+  "faces": {
+    // Sparse: every key optional. Unmapped faces render as plain numerals,
+    // so a half-finished pack is perfectly valid.
+    "feat-1": "data:image/png;base64,…",
+    "feat-eye": "data:image/svg+xml,…",
+    "feat-rune": "data:image/webp;base64,…",
+    "success-6": "data:image/jpeg;base64,…"
+  }
+}
+```
+
+**Face keys** — exactly these 18, anything else is rejected on import:
+`feat-1` … `feat-10`, `feat-eye`, `feat-rune`, `success-1` … `success-6`.
+The Feat die is a d12; its 11th and 12th faces are addressed by name (`feat-eye`,
+`feat-rune`) rather than by number, because the player is drawing *the Eye*, not "face 11."
+
+**Values** must be `data:` URLs of type `image/png`, `image/jpeg`, `image/webp`, or
+`image/svg+xml`. Remote URLs are rejected: a pack must be self-contained and must not make
+the app fetch anything (C5). Keep faces under 512 KB — packs ride along in every full-state
+export the player takes.
+
+Packs are applied to the tap-selection dice used in player-rolls and hybrid mode. They are
+**not** applied to the optional 3D dice: that renderer maps a single texture atlas over the
+die mesh with an undocumented UV layout, so per-face images can't be routed to it without
+reverse-engineering that layout. Authoring against this schema is nonetheless stable — if
+3D face art lands later it will consume these same packs.

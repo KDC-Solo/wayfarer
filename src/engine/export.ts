@@ -5,10 +5,12 @@ import type { Journey, Route } from './journey.ts';
 import type { FellowshipPhase } from './fellowshipPhase.ts';
 import type { Combat } from './combat.ts';
 import type { LoreTable } from './loreTable.ts';
+import { validateDicePack, type DicePack } from './dicePack.ts';
 import {
   appendLogEntry,
   clearAll,
   getAllCombats,
+  getAllDicePacks,
   getAllFellowshipPhases,
   getAllJourneys,
   getAllLogEntries,
@@ -19,6 +21,7 @@ import {
   getChronicle,
   putChronicle,
   putCombat,
+  putDicePack,
   putFellowshipPhase,
   putJourney,
   putLoreTable,
@@ -45,6 +48,9 @@ export interface StateEnvelope {
   fellowshipPhases: FellowshipPhase[];
   combats: Combat[];
   loreTables: LoreTable[];
+  /** F7.4 — optional dice texture packs (Phase 7 polish). Absent in
+   * pre-8 exports; readers default to []. */
+  dicePacks: DicePack[];
 }
 
 export class ImportError extends Error {}
@@ -52,7 +58,7 @@ export class ImportError extends Error {}
 export async function exportState(): Promise<StateEnvelope> {
   const chronicle = await getChronicle();
   if (!chronicle) throw new Error('No chronicle to export — nothing has been created yet.');
-  const [log, oracleTables, stepTemplates, journeys, routes, fellowshipPhases, combats, loreTables] =
+  const [log, oracleTables, stepTemplates, journeys, routes, fellowshipPhases, combats, loreTables, dicePacks] =
     await Promise.all([
       getAllLogEntries(),
       getAllOracleTables(),
@@ -62,6 +68,7 @@ export async function exportState(): Promise<StateEnvelope> {
       getAllFellowshipPhases(),
       getAllCombats(),
       getAllLoreTables(),
+      getAllDicePacks(),
     ]);
   return {
     format: 'wayfarer-export',
@@ -76,6 +83,7 @@ export async function exportState(): Promise<StateEnvelope> {
     fellowshipPhases,
     combats,
     loreTables,
+    dicePacks,
   };
 }
 
@@ -137,5 +145,10 @@ export async function importState(json: string): Promise<void> {
   }
   for (const loreTable of envelope.loreTables ?? []) {
     await putLoreTable(loreTable);
+  }
+  for (const pack of envelope.dicePacks ?? []) {
+    // Validated on the way in: packs are the one part of the envelope a
+    // third party is expected to author by hand (C4).
+    await putDicePack(validateDicePack(pack));
   }
 }

@@ -12,6 +12,7 @@ import {
 import { createFellowshipPhase, type FellowshipPhase } from './engine/fellowshipPhase.ts';
 import type { Combat } from './engine/combat.ts';
 import { createLoreTable, type LoreRollResult, type LoreTable } from './engine/loreTable.ts';
+import type { DicePack } from './engine/dicePack.ts';
 import { createLogEntry } from './engine/log.ts';
 import {
   appendLogEntry,
@@ -21,6 +22,7 @@ import {
   getAllFellowshipPhases,
   getAllJourneys,
   getAllLogEntries,
+  getAllDicePacks,
   getAllLoreTables,
   getAllOracleTables,
   getAllRoutes,
@@ -30,6 +32,8 @@ import {
   putCombat,
   putFellowshipPhase,
   putJourney,
+  deleteDicePack,
+  putDicePack,
   putLoreTable,
   putOracleTable,
   putRoute,
@@ -62,12 +66,16 @@ import { CombatPlanner } from './ui/CombatPlanner.tsx';
 import { CombatRunner } from './ui/CombatRunner.tsx';
 import { ChroniclePanel } from './ui/ChroniclePanel.tsx';
 import { LorePanel } from './ui/LorePanel.tsx';
+import { DicePackEditor } from './ui/DicePackEditor.tsx';
 import { Nav, type TabId } from './ui/Nav.tsx';
 import { BrandMark } from './ui/BrandMark.tsx';
 import { Welcome } from './ui/Welcome.tsx';
 
 const COMBAT_TEMPLATE_SEEDED_KEY = 'wayfarer.seeded.combat-template';
 const LORE_TABLE_SEEDED_KEY = 'wayfarer.seeded.lore-table';
+// Which pack is active is a small setting, so localStorage (PRD §9); the
+// packs themselves are user content and live in IndexedDB.
+const ACTIVE_DICE_PACK_KEY = 'wayfarer.dicePack.active';
 
 export default function App() {
   const [tab, setTab] = useState<TabId>('company');
@@ -75,6 +83,10 @@ export default function App() {
   const [log, setLog] = useState<LogEntry[]>([]);
   const [oracleTables, setOracleTables] = useState<OracleTable[]>([]);
   const [loreTables, setLoreTables] = useState<LoreTable[]>([]);
+  const [dicePacks, setDicePacks] = useState<DicePack[]>([]);
+  const [activeDicePackId, setActiveDicePackId] = useState<string | null>(
+    () => localStorage.getItem(ACTIVE_DICE_PACK_KEY),
+  );
   const [stepTemplates, setStepTemplates] = useState<StepTemplate[]>([]);
   const [journeys, setJourneys] = useState<Journey[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
@@ -130,6 +142,8 @@ export default function App() {
     }
     localStorage.setItem(LORE_TABLE_SEEDED_KEY, '1');
     setLoreTables(loadedLoreTables);
+
+    setDicePacks(await getAllDicePacks());
 
     const loadedJourneys = await getAllJourneys();
     setJourneys(loadedJourneys);
@@ -277,6 +291,28 @@ export default function App() {
       params.prose || undefined,
     );
     await persist(chronicle, entry);
+  }
+
+  async function handleCreateDicePack(pack: DicePack) {
+    await putDicePack(pack);
+    setDicePacks((p) => [...p, pack]);
+  }
+
+  async function handleUpdateDicePack(pack: DicePack) {
+    await putDicePack(pack);
+    setDicePacks((p) => p.map((existing) => (existing.id === pack.id ? pack : existing)));
+  }
+
+  async function handleDeleteDicePack(id: string) {
+    await deleteDicePack(id);
+    setDicePacks((p) => p.filter((pack) => pack.id !== id));
+    if (activeDicePackId === id) handleSetActiveDicePack(null);
+  }
+
+  function handleSetActiveDicePack(id: string | null) {
+    setActiveDicePackId(id);
+    if (id) localStorage.setItem(ACTIVE_DICE_PACK_KEY, id);
+    else localStorage.removeItem(ACTIVE_DICE_PACK_KEY);
   }
 
   async function handleCreateTable(table: OracleTable) {
@@ -455,6 +491,7 @@ export default function App() {
     ? (stepTemplates.find((t) => t.id === activeCombat.stepTemplateId) ?? null)
     : null;
 
+  const activeDicePack = dicePacks.find((p) => p.id === activeDicePackId) ?? null;
   const hasCompany = chronicle.company.length > 0;
 
   const importControl = (
@@ -527,6 +564,7 @@ export default function App() {
                     hero={activeHero}
                     companySize={chronicle.company.length}
                     diceInputMode={chronicle.diceInputMode}
+                    dicePack={activeDicePack}
                     onResolved={handleRollResolved}
                   />
                 )}
@@ -639,6 +677,14 @@ export default function App() {
                   onCreate={handleCreateStepTemplate}
                   onUpdate={handleUpdateStepTemplate}
                   onDelete={handleDeleteStepTemplate}
+                />
+                <DicePackEditor
+                  packs={dicePacks}
+                  activePackId={activeDicePackId}
+                  onCreate={handleCreateDicePack}
+                  onUpdate={handleUpdateDicePack}
+                  onDelete={handleDeleteDicePack}
+                  onSetActive={handleSetActiveDicePack}
                 />
               </>
             )}
