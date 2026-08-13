@@ -11,6 +11,15 @@ const RESOURCE_FIELDS: ResourceField[] = [
   'shadowScars',
 ];
 
+export const RESOURCE_FIELD_LABEL: Record<ResourceField, string> = {
+  endurance: 'Endurance',
+  hope: 'Hope',
+  fatigue: 'Fatigue',
+  shadow: 'Shadow',
+  shadowPoints: 'Shadow points',
+  shadowScars: 'Shadow scars',
+};
+
 interface Props {
   chronicle: Chronicle;
   onSetActive: (heroId: string) => void;
@@ -114,13 +123,13 @@ function HeroCard({
         <tbody>
           {RESOURCE_FIELDS.map((field) => (
             <tr key={field}>
-              <td>{field}</td>
+              <td>{RESOURCE_FIELD_LABEL[field]}</td>
               <td>{hero.resources[field]}</td>
               <td>
-                <button onClick={() => onResourceDelta(field, -1)} aria-label={`Decrease ${field}`}>
+                <button onClick={() => onResourceDelta(field, -1)} aria-label={`Decrease ${RESOURCE_FIELD_LABEL[field]}`}>
                   −
                 </button>
-                <button onClick={() => onResourceDelta(field, 1)} aria-label={`Increase ${field}`}>
+                <button onClick={() => onResourceDelta(field, 1)} aria-label={`Increase ${RESOURCE_FIELD_LABEL[field]}`}>
                   +
                 </button>
               </td>

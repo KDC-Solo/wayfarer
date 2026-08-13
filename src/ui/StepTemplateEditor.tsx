@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { OracleTable } from '../engine/oracleTable.ts';
+import { RESOURCE_FIELD_LABEL } from './CompanyOverview.tsx';
 import type { ResourceField } from '../engine/resources.ts';
 import {
   addStep,
@@ -229,7 +230,7 @@ function StepRow({
               {(['endurance', 'hope', 'fatigue', 'shadow', 'shadowPoints', 'shadowScars'] as ResourceField[]).map(
                 (f) => (
                   <option key={f} value={f}>
-                    {f}
+                    {RESOURCE_FIELD_LABEL[f]}
                   </option>
                 ),
               )}

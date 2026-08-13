@@ -12,3 +12,8 @@ test-results/
 
 # Claude Code harness-local state, not project content
 .claude/
+
+# Playwright artifacts
+e2e/screenshots/
+test-results/
+playwright-report/

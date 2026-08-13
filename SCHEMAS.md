@@ -104,7 +104,7 @@ The Export button writes one JSON document:
 ```jsonc
 {
   "format": "wayfarer-export",     // required discriminator
-  "schemaVersion": 6,
+  "schemaVersion": 7,
   "exportedAt": "ISO-8601",
   "chronicle": { /* campaign container incl. company */ },
   "log": [ /* append-only LogEntry records */ ],

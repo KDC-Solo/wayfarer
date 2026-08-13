@@ -9,7 +9,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 The UI got a real visual pass (dark-first design system in `src/ui/theme.css`, tab navigation, a first-run welcome screen) — it's no longer "functional but plain." See "UI/design system" below before adding new screens or components.
 
 Known gaps worth knowing about before extending further:
-- No Playwright e2e coverage yet (sibling KDC-Solo repos have it; this repo only has Vitest unit tests). The journey interpreter does have an end-to-end test (`journeyIntegration.test.ts`) walking the real default template through a full two-leg journey — that's engine-level, not a browser-driven UI test.
+- Playwright e2e coverage exists (`e2e/smoke.spec.ts`, `npm run test:e2e`): every tab's core loop in a real Chromium against the dev server, run at both desktop and Pixel-7 viewport (N8), including mid-journey reload (N4). Screenshots land in `e2e/screenshots/` (gitignored) — reviewing them is how the "honest look in a real browser" finally happened. The engine-level integration tests (`journeyIntegration`/`combatIntegration`) remain the deep-walk coverage; e2e stays a smoke layer.
 - `src/data/skills.ts`'s eighteen skill names are a best-effort seed, not verified against the core rulebook (Wayfarer only has the Strider Mode supplement on file, not core rules) — every hero's skill list is freely editable, so this isn't load-bearing, but don't treat the names as authoritative in code or comments.
 - The engine doesn't assert which Attribute governs which skill — the roll UI lets the player pick per roll (deliberate, see `RollPanel.tsx` comment; keeps NG2 — the app isn't a rules teacher).
 - The Lore Table (p.11-12) is now its own entity (`loreTable.ts` — 12 Feat-die sections × 6 rows × Action/Aspect/Focus, all 216 cells empty per C2) rather than a forced fit into the single-column `OracleTableRow` model; `LorePanel.tsx` in the Oracle tab rolls it (auto-roll, same input-mode cut as TableRoller) and hosts its section-by-section editor. Seeded once via the same localStorage-marker pattern as the combat template.
@@ -33,6 +33,7 @@ Vite + React + TypeScript PWA, no backend.
 - `npm run dev` — dev server
 - `npm run build` — typecheck (`tsc -b`) + production build (incl. service worker via `vite-plugin-pwa`)
 - `npm test` — Vitest suite (`src/**/*.test.ts`); `npx vitest run -t "<name>"` for a single test. IndexedDB is polyfilled for tests via `fake-indexeddb` (`src/test-setup.ts`) since Vitest runs in a `node` environment.
+- `npm run test:e2e` — Playwright smoke suite (`e2e/`, real Chromium + real IndexedDB, desktop + mobile projects; starts the dev server itself). First run needs `npx playwright install chromium`.
 
 ## Repository conventions
 
@@ -76,7 +77,7 @@ Vite + React + TypeScript PWA, no backend.
 - Before a company exists, `App.tsx` renders `Welcome.tsx` instead of the tab shell — a dedicated first-run screen with one CTA (create a hero), not the empty states of five different panels stacked on top of each other. Don't reintroduce those empty-state stacks; extend `Welcome.tsx` instead if onboarding needs more.
 - `BrandMark.tsx` is the header logo — an inline SVG (not the `public/favicon.svg` file) so it can pick up `--accent`/`--bg` via CSS `currentColor`-style `var()` fills and re-theme with the rest of the app; keep both in sync if the mark ever changes, they're deliberately the same shape.
 - User-facing copy should never show internal requirement IDs (`F3.10`, `(F4.2)`, etc.) — those belong in code comments only. A pass already removed the ones that had leaked into labels/legends/headings; don't reintroduce the habit when adding new panels.
-- No browser tool is available in this sandbox, so UI changes here were verified via typecheck/build/dev-server-module-resolution, not an actual rendered screenshot — worth an honest look in a real browser (or `/run-skill-generator` to capture a working screenshot recipe for this repo) before trusting the visual design further.
+- UI changes can now be verified visually: `npm run test:e2e` captures full-page screenshots of every tab into `e2e/screenshots/` (both viewports). Read them after any styling work — that loop already caught a stranded-checkbox layout bug and raw camelCase resource labels.
 
 ## What this project is
 
