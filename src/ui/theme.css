@@ -1470,3 +1470,9 @@ button.destructive:hover {
   border-color: var(--danger);
   color: var(--bg);
 }
+
+.chip-choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}

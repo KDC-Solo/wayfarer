@@ -71,6 +71,46 @@ own entity, not an oracle-table variant:
 
 All 216 cells ship empty (C2); users transcribe their own copy in the editor.
 
+## Culture and Calling
+
+Character creation is driven entirely by these; the app ships none, because every field is
+rulebook content. Import them and guided creation appears, otherwise the app offers the
+manual sheet instead.
+
+```jsonc
+{
+  "id": "any-unique-string",
+  "name": "Bardings",
+  "attributeSets": [                 // the book's table; roll a d6 or choose
+    { "roll": 1, "strength": 5, "heart": 7, "wits": 2 }
+  ],
+  "derived": { "endurance": 20, "hope": 8, "parry": 12 },  // added to STR/HEART/WITS
+  "skills": { "Awe": 1, "Battle": 2 },                     // starting ranks
+  "favouredSkillChoices": ["Awe", "Battle"],               // may be empty
+  "blessingName": "Stout-hearted",
+  "standardOfLiving": "Prosperous",
+  "distinctiveFeatures": ["Bold", "Eager"],                // choose two
+  "sourceReference": "core rules, p.36"
+}
+```
+
+Derived stats are stored as the *addend*, not a finished number, because the constants
+differ per culture — Endurance is `STRENGTH + derived.endurance`.
+
+```jsonc
+{
+  "id": "any-unique-string",
+  "name": "Warden",
+  "favouredSkillChoices": ["Awareness", "Healing", "Insight"],  // the pool, choose two
+  "additionalFeature": "Shadow-lore",
+  "shadowPath": "Path of Despair",
+  "sourceReference": "core rules, p.50"
+}
+```
+
+Both are rejected on import if malformed: a culture needs at least one well-formed
+attribute set, and both need an id and a name.
+
 ## Step template
 
 ```jsonc
@@ -115,6 +155,8 @@ The Export button writes one JSON document:
   "fellowshipPhases": [],
   "combats": [],                    // absent in pre-6 exports; readers default to []
   "loreTables": [],                 // absent in pre-7 exports; readers default to []
+  "cultures": [],                   // absent in pre-10 exports; readers default to []
+  "callings": [],                   // absent in pre-10 exports; readers default to []
   "dicePacks": []                   // absent in pre-8 exports; readers default to []
 }
 ```

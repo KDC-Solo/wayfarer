@@ -97,7 +97,7 @@ describe('importContentPack — filling tables without losing the campaign', () 
   it('rejects files that carry no table content at all', async () => {
     await expect(importContentPack('not json')).rejects.toThrow(ImportError);
     await expect(importContentPack(JSON.stringify({ format: 'wayfarer-export' }))).rejects.toThrow(
-      /No oracle tables/,
+      /No tables, cultures or callings/,
     );
   });
 });

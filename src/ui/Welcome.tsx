@@ -4,6 +4,9 @@ import { BrandMark } from './BrandMark.tsx';
 interface Props {
   onQuickStart: (name: string) => void;
   onFullSheet: () => void;
+  /** Only offered once the player has imported cultures — the app ships
+   * none, so guided creation cannot exist without them. */
+  onGuidedCreation?: () => void;
 }
 
 // The first thing a stranger sees, and its job is to answer three
@@ -16,7 +19,7 @@ interface Props {
 // doesn't own the books needs to know that *before* investing time, and a
 // visitor who does own them needs to know how much works immediately.
 
-export function Welcome({ onQuickStart, onFullSheet }: Props) {
+export function Welcome({ onQuickStart, onFullSheet, onGuidedCreation }: Props) {
   const [name, setName] = useState('');
 
   function submit(e: React.FormEvent) {
@@ -50,7 +53,15 @@ export function Welcome({ onQuickStart, onFullSheet }: Props) {
           </button>
         </div>
         <p className="quickstart-note">
-          Starts with sample stats so you can roll straight away — edit them later, or{' '}
+          Starts with sample stats so you can roll straight away — edit them later,{' '}
+          {onGuidedCreation && (
+            <>
+              <button type="button" className="linklike" onClick={onGuidedCreation}>
+                build a character properly
+              </button>
+              , or{' '}
+            </>
+          )}
           <button type="button" className="linklike" onClick={onFullSheet}>
             enter your character sheet now
           </button>

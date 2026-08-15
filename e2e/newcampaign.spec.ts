@@ -26,7 +26,7 @@ async function importTables(page: import('@playwright/test').Page) {
     mimeType: 'application/json',
     buffer: Buffer.from(PACK),
   });
-  await expect(page.getByText(/Table content imported/)).toBeVisible();
+  await expect(page.getByText(/Imported —/)).toBeVisible();
 }
 
 test('a new campaign clears play but keeps the tables you transcribed', async ({ page }) => {

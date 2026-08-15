@@ -6,10 +6,13 @@ import type { FellowshipPhase } from './fellowshipPhase.ts';
 import type { Combat } from './combat.ts';
 import type { LoreTable } from './loreTable.ts';
 import { validateDicePack, type DicePack } from './dicePack.ts';
+import { validateCalling, validateCulture, type Calling, type Culture } from './culture.ts';
 import {
   appendLogEntry,
   clearAll,
   getAllCombats,
+  getAllCallings,
+  getAllCultures,
   getAllDicePacks,
   getAllFellowshipPhases,
   getAllJourneys,
@@ -21,6 +24,8 @@ import {
   getChronicle,
   putChronicle,
   putCombat,
+  putCalling,
+  putCulture,
   putDicePack,
   putFellowshipPhase,
   putJourney,
@@ -51,6 +56,10 @@ export interface StateEnvelope {
   /** F7.4 — optional dice texture packs (Phase 7 polish). Absent in
    * pre-8 exports; readers default to []. */
   dicePacks: DicePack[];
+  /** Character-creation data (F1.1). Licensed content, so the app ships
+   * none — absent in pre-10 exports; readers default to []. */
+  cultures: Culture[];
+  callings: Calling[];
 }
 
 export class ImportError extends Error {}
@@ -58,7 +67,19 @@ export class ImportError extends Error {}
 export async function exportState(): Promise<StateEnvelope> {
   const chronicle = await getChronicle();
   if (!chronicle) throw new Error('No chronicle to export — nothing has been created yet.');
-  const [log, oracleTables, stepTemplates, journeys, routes, fellowshipPhases, combats, loreTables, dicePacks] =
+  const [
+    log,
+    oracleTables,
+    stepTemplates,
+    journeys,
+    routes,
+    fellowshipPhases,
+    combats,
+    loreTables,
+    dicePacks,
+    cultures,
+    callings,
+  ] =
     await Promise.all([
       getAllLogEntries(),
       getAllOracleTables(),
@@ -69,6 +90,8 @@ export async function exportState(): Promise<StateEnvelope> {
       getAllCombats(),
       getAllLoreTables(),
       getAllDicePacks(),
+      getAllCultures(),
+      getAllCallings(),
     ]);
   return {
     format: 'wayfarer-export',
@@ -84,6 +107,8 @@ export async function exportState(): Promise<StateEnvelope> {
     combats,
     loreTables,
     dicePacks,
+    cultures,
+    callings,
   };
 }
 
@@ -134,6 +159,8 @@ export interface ContentPackResult {
   tablesFilled: number;
   tablesAdded: number;
   loreTablesFilled: number;
+  culturesAdded: number;
+  callingsAdded: number;
 }
 
 export async function importContentPack(json: string): Promise<ContentPackResult> {
@@ -149,13 +176,26 @@ export async function importContentPack(json: string): Promise<ContentPackResult
   const pack = parsed as Partial<StateEnvelope>;
   const incomingTables = pack.oracleTables ?? [];
   const incomingLore = pack.loreTables ?? [];
-  if (incomingTables.length === 0 && incomingLore.length === 0) {
-    throw new ImportError('No oracle tables or Lore tables found in this file.');
+  const incomingCultures = pack.cultures ?? [];
+  const incomingCallings = pack.callings ?? [];
+  if (
+    incomingTables.length === 0 &&
+    incomingLore.length === 0 &&
+    incomingCultures.length === 0 &&
+    incomingCallings.length === 0
+  ) {
+    throw new ImportError('No tables, cultures or callings found in this file.');
   }
 
   const existing = await getAllOracleTables();
   const byName = new Map(existing.map((t) => [t.name.trim().toLowerCase(), t]));
-  const result: ContentPackResult = { tablesFilled: 0, tablesAdded: 0, loreTablesFilled: 0 };
+  const result: ContentPackResult = {
+    tablesFilled: 0,
+    tablesAdded: 0,
+    loreTablesFilled: 0,
+    culturesAdded: 0,
+    callingsAdded: 0,
+  };
 
   for (const table of incomingTables) {
     const match = byName.get(table.name.trim().toLowerCase());
@@ -175,6 +215,27 @@ export async function importContentPack(json: string): Promise<ContentPackResult
       existingLore[0];
     await putLoreTable(match ? { ...lore, id: match.id } : lore);
     result.loreTablesFilled++;
+  }
+
+  // Cultures and callings replace by name so re-importing a corrected
+  // pack updates in place rather than duplicating.
+  const existingCultures = await getAllCultures();
+  for (const raw of incomingCultures) {
+    const culture = validateCulture(raw);
+    const match = existingCultures.find(
+      (c) => c.name.trim().toLowerCase() === culture.name.trim().toLowerCase(),
+    );
+    await putCulture(match ? { ...culture, id: match.id } : culture);
+    result.culturesAdded++;
+  }
+  const existingCallings = await getAllCallings();
+  for (const raw of incomingCallings) {
+    const calling = validateCalling(raw);
+    const match = existingCallings.find(
+      (c) => c.name.trim().toLowerCase() === calling.name.trim().toLowerCase(),
+    );
+    await putCalling(match ? { ...calling, id: match.id } : calling);
+    result.callingsAdded++;
   }
 
   return result;
@@ -208,6 +269,12 @@ export async function importState(json: string): Promise<void> {
   }
   for (const loreTable of envelope.loreTables ?? []) {
     await putLoreTable(loreTable);
+  }
+  for (const culture of envelope.cultures ?? []) {
+    await putCulture(validateCulture(culture));
+  }
+  for (const calling of envelope.callings ?? []) {
+    await putCalling(validateCalling(calling));
   }
   for (const pack of envelope.dicePacks ?? []) {
     // Validated on the way in: packs are the one part of the envelope a

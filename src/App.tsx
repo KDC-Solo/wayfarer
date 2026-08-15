@@ -18,6 +18,8 @@ import { createLogEntry } from './engine/log.ts';
 import {
   appendLogEntry,
   clearAll,
+  getAllCallings,
+  getAllCultures,
   clearPlayData,
   deleteOracleTable,
   deleteStepTemplate,
@@ -77,6 +79,8 @@ import { Toast, type ToastMessage } from './ui/Toast.tsx';
 import { HeroSheet } from './ui/HeroSheet.tsx';
 import { EyePanel } from './ui/EyePanel.tsx';
 import { NewCampaign } from './ui/NewCampaign.tsx';
+import { CharacterCreation } from './ui/CharacterCreation.tsx';
+import type { Calling, Culture } from './engine/culture.ts';
 import {
   createEyeAwareness,
   eyeIncreaseForRoll,
@@ -116,6 +120,9 @@ export default function App() {
   const [oracleTables, setOracleTables] = useState<OracleTable[]>([]);
   const [loreTables, setLoreTables] = useState<LoreTable[]>([]);
   const [dicePacks, setDicePacks] = useState<DicePack[]>([]);
+  const [cultures, setCultures] = useState<Culture[]>([]);
+  const [callings, setCallings] = useState<Calling[]>([]);
+  const [creating, setCreating] = useState(false);
   const [activeDicePackId, setActiveDicePackId] = useState<string | null>(
     () => localStorage.getItem(ACTIVE_DICE_PACK_KEY),
   );
@@ -185,6 +192,8 @@ export default function App() {
     setLoreTables(loadedLoreTables);
 
     setDicePacks(await getAllDicePacks());
+    setCultures(await getAllCultures());
+    setCallings(await getAllCallings());
 
     const loadedJourneys = await getAllJourneys();
     setJourneys(loadedJourneys);
@@ -601,8 +610,10 @@ export default function App() {
         r.tablesFilled && `filled ${r.tablesFilled} tables`,
         r.tablesAdded && `added ${r.tablesAdded}`,
         r.loreTablesFilled && 'filled the Lore Table',
+        r.culturesAdded && `${r.culturesAdded} cultures`,
+        r.callingsAdded && `${r.callingsAdded} callings`,
       ].filter(Boolean);
-      setStatus({ tone: 'success', text: `Table content imported — ${bits.join(', ')}. Saved to this browser.` });
+      setStatus({ tone: 'success', text: `Imported — ${bits.join(', ')}. Saved to this browser.` });
     } catch (err) {
       setStatus({ tone: 'error', text: `Import failed: ${err instanceof Error ? err.message : String(err)}` });
     }
@@ -682,10 +693,24 @@ export default function App() {
       <main>
         {!hasCompany ? (
           <>
-            {showHeroForm ? (
+            {creating ? (
+              <CharacterCreation
+                cultures={cultures}
+                callings={callings}
+                onCreate={(hero) => {
+                  setCreating(false);
+                  void handleAddHero(hero);
+                }}
+                onCancel={() => setCreating(false)}
+              />
+            ) : showHeroForm ? (
               <HeroForm onCreate={handleAddHero} onCancel={() => setShowHeroForm(false)} />
             ) : (
-              <Welcome onQuickStart={handleQuickStart} onFullSheet={() => setShowHeroForm(true)} />
+              <Welcome
+                onQuickStart={handleQuickStart}
+                onFullSheet={() => setShowHeroForm(true)}
+                onGuidedCreation={cultures.length > 0 ? () => setCreating(true) : undefined}
+              />
             )}
           </>
         ) : (
@@ -748,7 +773,20 @@ export default function App() {
                   onChange={handleEyeChange}
                   onRevelation={handleRevelation}
                 />
-                {showHeroForm && <HeroForm onCreate={handleAddHero} onCancel={() => setShowHeroForm(false)} />}
+                {showHeroForm &&
+                  (cultures.length > 0 ? (
+                    <CharacterCreation
+                      cultures={cultures}
+                      callings={callings}
+                      onCreate={(hero) => {
+                        setShowHeroForm(false);
+                        void handleAddHero(hero);
+                      }}
+                      onCancel={() => setShowHeroForm(false)}
+                    />
+                  ) : (
+                    <HeroForm onCreate={handleAddHero} onCancel={() => setShowHeroForm(false)} />
+                  ))}
                 {sheetHero && (
                   <HeroSheet hero={sheetHero} onChange={handleUpdateHero} onClose={() => setSheetHeroId(null)} />
                 )}

@@ -7,6 +7,7 @@ import type { FellowshipPhase } from './fellowshipPhase.ts';
 import type { Combat } from './combat.ts';
 import type { LoreTable } from './loreTable.ts';
 import type { DicePack } from './dicePack.ts';
+import type { Calling, Culture } from './culture.ts';
 
 // IndexedDB for chronicle + log + oracle tables + step templates + journeys
 // + routes + Fellowship phases (PRD §9 — volume grows unbounded over a
@@ -14,7 +15,7 @@ import type { DicePack } from './dicePack.ts';
 // database = one campaign; the app does not manage multiple chronicles.
 
 const DB_NAME = 'wayfarer';
-const DB_VERSION = 7;
+const DB_VERSION = 8;
 const CHRONICLE_STORE = 'chronicle';
 const LOG_STORE = 'log';
 const ORACLE_TABLE_STORE = 'oracleTables';
@@ -25,6 +26,8 @@ const FELLOWSHIP_PHASE_STORE = 'fellowshipPhases';
 const COMBAT_STORE = 'combats';
 const LORE_TABLE_STORE = 'loreTables';
 const DICE_PACK_STORE = 'dicePacks';
+const CULTURE_STORE = 'cultures';
+const CALLING_STORE = 'callings';
 const SINGLETON_KEY = 'current';
 
 interface WayfarerDB extends DBSchema {
@@ -69,6 +72,14 @@ interface WayfarerDB extends DBSchema {
     key: string;
     value: DicePack;
   };
+  [CULTURE_STORE]: {
+    key: string;
+    value: Culture;
+  };
+  [CALLING_STORE]: {
+    key: string;
+    value: Calling;
+  };
 }
 
 let dbPromise: Promise<IDBPDatabase<WayfarerDB>> | null = null;
@@ -102,6 +113,10 @@ function getDb(): Promise<IDBPDatabase<WayfarerDB>> {
         }
         if (oldVersion < 7) {
           db.createObjectStore(DICE_PACK_STORE, { keyPath: 'id' });
+        }
+        if (oldVersion < 8) {
+          db.createObjectStore(CULTURE_STORE, { keyPath: 'id' });
+          db.createObjectStore(CALLING_STORE, { keyPath: 'id' });
         }
       },
     });
@@ -237,6 +252,26 @@ export async function deleteDicePack(id: string): Promise<void> {
   await db.delete(DICE_PACK_STORE, id);
 }
 
+export async function getAllCultures(): Promise<Culture[]> {
+  const db = await getDb();
+  return db.getAll(CULTURE_STORE);
+}
+
+export async function putCulture(culture: Culture): Promise<void> {
+  const db = await getDb();
+  await db.put(CULTURE_STORE, culture);
+}
+
+export async function getAllCallings(): Promise<Calling[]> {
+  const db = await getDb();
+  return db.getAll(CALLING_STORE);
+}
+
+export async function putCalling(calling: Calling): Promise<void> {
+  const db = await getDb();
+  await db.put(CALLING_STORE, calling);
+}
+
 /**
  * Clears everything belonging to the *campaign* — the chronicle, the
  * log, and every run through it — while keeping the content the player
@@ -272,4 +307,6 @@ export async function clearAll(): Promise<void> {
   await db.clear(COMBAT_STORE);
   await db.clear(LORE_TABLE_STORE);
   await db.clear(DICE_PACK_STORE);
+  await db.clear(CULTURE_STORE);
+  await db.clear(CALLING_STORE);
 }

@@ -1,4 +1,12 @@
 import { DEFAULT_SKILL_NAMES } from '../data/skills.ts';
+import {
+  deriveEndurance,
+  deriveHope,
+  deriveParry,
+  type AttributeSet,
+  type Calling,
+  type Culture,
+} from './culture.ts';
 import type { Hero } from './types.ts';
 
 export interface NewHeroInput {
@@ -31,6 +39,8 @@ export function createHero(input: NewHeroInput): Hero {
     skillPoints: 0,
     wounded: false,
     woundTreated: false,
+    favouredSkills: [],
+    distinctiveFeatures: [],
   };
 }
 
@@ -80,6 +90,62 @@ export function createQuickStartHero(name: string): Hero {
 /** Arbitrary spread so a quick-start hero isn't uniformly flat — not a
  * claim about any culture or calling. */
 const QUICK_START_FOCUS_SKILLS = ['Awe', 'Athletics', 'Travel', 'Insight'];
+
+/**
+ * Character creation proper (F1.1): a culture and calling from the
+ * player's own imported data, an attribute set chosen from that
+ * culture's table, and the picks the book asks for. Everything the
+ * culture supplies — skill ranks, derived Endurance/Hope/Parry — is
+ * applied here rather than left for the player to copy by hand.
+ */
+export interface CharacterCreationChoices {
+  name: string;
+  culture: Culture;
+  calling: Calling | null;
+  attributeSet: AttributeSet;
+  favouredSkills: string[];
+  distinctiveFeatures: string[];
+  patron?: string;
+}
+
+export function createHeroFromChoices(choices: CharacterCreationChoices): Hero {
+  const { culture, calling, attributeSet } = choices;
+  const base = createHero({
+    name: choices.name,
+    culture: culture.name,
+    calling: calling?.name ?? '',
+    patron: choices.patron,
+  });
+
+  // The culture's ranks replace the blank defaults, but any skill the
+  // app knows and the culture doesn't mention stays at 0 rather than
+  // vanishing — house-ruled skill lists must survive creation.
+  const skills = { ...base.skills };
+  for (const [name, rank] of Object.entries(culture.skills)) skills[name] = rank;
+
+  const features = [...choices.distinctiveFeatures];
+  if (calling?.additionalFeature && !features.includes(calling.additionalFeature)) {
+    features.push(calling.additionalFeature);
+  }
+
+  return {
+    ...base,
+    attributes: {
+      strength: attributeSet.strength,
+      heart: attributeSet.heart,
+      wits: attributeSet.wits,
+    },
+    skills,
+    favouredSkills: choices.favouredSkills,
+    distinctiveFeatures: features,
+    parry: deriveParry(culture, attributeSet.wits),
+    resources: {
+      ...base.resources,
+      endurance: deriveEndurance(culture, attributeSet.strength),
+      hope: deriveHope(culture, attributeSet.heart),
+    },
+  };
+}
 
 export interface DerivedStates {
   /** F1.15 — Fatigue at or above Endurance. */

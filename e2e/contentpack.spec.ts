@@ -37,7 +37,7 @@ test('a content pack fills the skeletons and spares the chronicle', async ({ pag
     mimeType: 'application/json',
     buffer: Buffer.from(PACK),
   });
-  await expect(page.getByText(/Table content imported/)).toBeVisible();
+  await expect(page.getByText(/Imported —/)).toBeVisible();
 
   // Wait for the reload that follows the import to reach the UI before
   // rolling: the pack's roll expression differs from the seeded
@@ -69,7 +69,7 @@ test('imported content survives a browser refresh', async ({ page }) => {
     mimeType: 'application/json',
     buffer: Buffer.from(PACK),
   });
-  await expect(page.getByText(/Table content imported/)).toBeVisible();
+  await expect(page.getByText(/Imported —/)).toBeVisible();
 
   // Full reload — new page, storage re-read from IndexedDB.
   await page.reload();

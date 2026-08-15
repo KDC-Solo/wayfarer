@@ -69,6 +69,14 @@ export interface Hero {
    */
   wounded?: boolean;
   woundTreated?: boolean;
+  /** F1.1 — chosen at creation. Favoured skills roll an extra Feat die
+   * in the book; the app surfaces them so the player can apply that,
+   * rather than asserting the rule itself. Optional for heroes made
+   * before character creation existed. */
+  favouredSkills?: string[];
+  distinctiveFeatures?: string[];
+  /** Derived from the culture at creation (WITS + culture base). */
+  parry?: number;
 }
 
 export interface Chronicle {
@@ -127,4 +135,4 @@ export interface LogEntry {
 // Bumped for the Eye of Mordor tracker (F8.x). Backwards compatible with
 // versions 5-8: every field added since 5 is optional, and newer
 // collections simply may be absent from older exports.
-export const SCHEMA_VERSION = 9;
+export const SCHEMA_VERSION = 10;
