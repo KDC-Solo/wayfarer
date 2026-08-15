@@ -18,6 +18,7 @@ interface Props {
 
 export function HeroSheet({ hero, onChange, onClose }: Props) {
   const [newProficiency, setNewProficiency] = useState('');
+  const [newSkill, setNewSkill] = useState('');
 
   function setField<K extends keyof Hero>(key: K, value: Hero[K]) {
     onChange({ ...hero, [key]: value });
@@ -25,6 +26,19 @@ export function HeroSheet({ hero, onChange, onClose }: Props) {
 
   function setSkill(name: string, rank: number) {
     onChange({ ...hero, skills: { ...hero.skills, [name]: clamp(rank) } });
+  }
+
+  function removeSkill(name: string) {
+    const next = { ...hero.skills };
+    delete next[name];
+    setField('skills', next);
+  }
+
+  function addSkill() {
+    const name = newSkill.trim();
+    if (!name || name in hero.skills) return;
+    setSkill(name, 0);
+    setNewSkill('');
   }
 
   function setProficiency(name: string, rank: number) {
@@ -96,12 +110,35 @@ export function HeroSheet({ hero, onChange, onClose }: Props) {
 
       <fieldset>
         <legend>Skills</legend>
+        {/* Book order, not alphabetical: you copy a character sheet
+            straight down, and hunting for each name would be worse. */}
         <div className="skill-grid">
-          {Object.keys(hero.skills)
-            .sort((a, b) => a.localeCompare(b))
-            .map((name) => (
-              <Stepper key={name} label={name} value={hero.skills[name]} onChange={(v) => setSkill(name, v)} />
-            ))}
+          {Object.keys(hero.skills).map((name) => (
+            <Stepper
+              key={name}
+              label={name}
+              value={hero.skills[name]}
+              onChange={(v) => setSkill(name, v)}
+              onRemove={() => removeSkill(name)}
+            />
+          ))}
+        </div>
+        <div className="quickstart-row">
+          <input
+            value={newSkill}
+            placeholder="Add a skill"
+            aria-label="New skill"
+            onChange={(e) => setNewSkill(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                addSkill();
+              }
+            }}
+          />
+          <button onClick={addSkill} disabled={!newSkill.trim()}>
+            Add
+          </button>
         </div>
       </fieldset>
 

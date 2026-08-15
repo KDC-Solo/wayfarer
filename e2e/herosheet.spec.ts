@@ -15,8 +15,9 @@ test('skill ranks and proficiencies can be entered and reach the roll', async ({
   // Set a real skill rank.
   for (let i = 0; i < 3; i++) await sheet.getByRole('button', { name: 'Increase Battle' }).click();
   // And a combat proficiency, which the app ships none of.
-  await sheet.getByLabel('New combat proficiency').fill('Swords');
-  await sheet.getByRole('button', { name: 'Add', exact: true }).first().click();
+  const proficiencies = sheet.getByRole('group', { name: 'Combat proficiencies' });
+  await proficiencies.getByLabel('New combat proficiency').fill('Swords');
+  await proficiencies.getByRole('button', { name: 'Add', exact: true }).click();
   await sheet.getByRole('button', { name: 'Increase Swords' }).click();
 
   await sheet.getByRole('button', { name: 'Done' }).click();
@@ -31,11 +32,31 @@ test('a sheet edit survives a reload', async ({ page }) => {
   await page.getByRole('button', { name: 'Sheet' }).click();
   const sheet = page.locator('.hero-sheet');
   await sheet.getByRole('button', { name: 'Increase Valour' }).click();
-  await sheet.getByLabel('New gear entry').fill('A weathered cloak');
-  await sheet.getByRole('button', { name: 'Add', exact: true }).last().click();
+  const gear = sheet.getByRole('group', { name: 'Gear' });
+  await gear.getByLabel('New gear entry').fill('A weathered cloak');
+  await gear.getByRole('button', { name: 'Add', exact: true }).click();
   await expect(sheet.getByText('A weathered cloak')).toBeVisible();
 
   await page.reload();
   await page.getByRole('button', { name: 'Sheet' }).click();
   await expect(page.locator('.hero-sheet').getByText('A weathered cloak')).toBeVisible();
+});
+
+test('skills can be added and removed, so an older hero can be corrected', async ({ page }) => {
+  await createHero(page, 'Beran');
+  await page.getByRole('button', { name: 'Sheet' }).click();
+  const sheet = page.locator('.hero-sheet');
+
+  // The corrected list ships TRAVEL (Strider Mode p.16 calls for it).
+  await expect(sheet.getByRole('button', { name: 'Increase Travel' })).toBeVisible();
+  await expect(sheet.getByRole('button', { name: 'Increase Search' })).toHaveCount(0);
+
+  // House rules and older heroes both need the list to be editable.
+  const skills = sheet.getByRole('group', { name: 'Skills' });
+  await skills.getByLabel('New skill').fill('Smithing');
+  await skills.getByRole('button', { name: 'Add', exact: true }).click();
+  await expect(sheet.getByRole('button', { name: 'Increase Smithing' })).toBeVisible();
+
+  await sheet.getByRole('button', { name: 'Remove Smithing' }).click();
+  await expect(sheet.getByRole('button', { name: 'Increase Smithing' })).toHaveCount(0);
 });
