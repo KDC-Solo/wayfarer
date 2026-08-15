@@ -17,6 +17,8 @@ import type { DicePack } from './engine/dicePack.ts';
 import { createLogEntry } from './engine/log.ts';
 import {
   appendLogEntry,
+  clearAll,
+  clearPlayData,
   deleteOracleTable,
   deleteStepTemplate,
   getAllCombats,
@@ -74,6 +76,7 @@ import { Welcome } from './ui/Welcome.tsx';
 import { Toast, type ToastMessage } from './ui/Toast.tsx';
 import { HeroSheet } from './ui/HeroSheet.tsx';
 import { EyePanel } from './ui/EyePanel.tsx';
+import { NewCampaign } from './ui/NewCampaign.tsx';
 import {
   createEyeAwareness,
   eyeIncreaseForRoll,
@@ -549,6 +552,36 @@ export default function App() {
     await persist(chronicle, createLogEntry({ type: 'prose', prose }));
   }
 
+  /** The flow persistence.ts has referenced since Milestone 0. Keeping
+   * authored content by default is what makes a second campaign cheap. */
+  async function handleNewCampaign({ keepContent }: { keepContent: boolean }) {
+    if (keepContent) {
+      await clearPlayData();
+    } else {
+      await clearAll();
+      // Let the first-run seeding run again for the wiped content.
+      localStorage.removeItem(INITIAL_SEED_KEY);
+      localStorage.removeItem(COMBAT_TEMPLATE_SEEDED_KEY);
+      localStorage.removeItem(LORE_TABLE_SEEDED_KEY);
+      localStorage.removeItem(ACTIVE_DICE_PACK_KEY);
+      setActiveDicePackId(null);
+    }
+    // Drop every in-memory handle to the old campaign before reloading.
+    setActiveJourneyId(null);
+    setActiveFellowshipPhaseId(null);
+    setActiveCombatId(null);
+    setSheetHeroId(null);
+    setLastResourceChange(null);
+    setTab('company');
+    await refresh();
+    setStatus({
+      tone: 'success',
+      text: keepContent
+        ? 'New campaign started — your tables and templates were kept.'
+        : 'Everything cleared. Starting fresh.',
+    });
+  }
+
   async function handleExport() {
     const envelope = await exportState();
     const blob = new Blob([serializeState(envelope)], { type: 'application/json' });
@@ -838,6 +871,7 @@ export default function App() {
                   onUpdate={handleUpdateStepTemplate}
                   onDelete={handleDeleteStepTemplate}
                 />
+                <NewCampaign onExport={handleExport} onConfirm={handleNewCampaign} />
                 <DicePackEditor
                   packs={dicePacks}
                   activePackId={activeDicePackId}

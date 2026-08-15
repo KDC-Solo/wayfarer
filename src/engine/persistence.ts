@@ -237,7 +237,29 @@ export async function deleteDicePack(id: string): Promise<void> {
   await db.delete(DICE_PACK_STORE, id);
 }
 
-/** Full local-state reset. Used by tests and by a future "start new campaign" flow. */
+/**
+ * Clears everything belonging to the *campaign* — the chronicle, the
+ * log, and every run through it — while keeping the content the player
+ * authored: their transcribed oracle and Lore tables, step templates,
+ * and dice packs.
+ *
+ * That split is the whole point of a "new campaign" command. Table text
+ * copied out of your own rulebook is expensive to produce and applies
+ * to every campaign you will ever run; a chronicle belongs to exactly
+ * one. Wiping both would make starting a second campaign as costly as
+ * starting the first.
+ */
+export async function clearPlayData(): Promise<void> {
+  const db = await getDb();
+  await db.clear(CHRONICLE_STORE);
+  await db.clear(LOG_STORE);
+  await db.clear(JOURNEY_STORE);
+  await db.clear(ROUTE_STORE);
+  await db.clear(FELLOWSHIP_PHASE_STORE);
+  await db.clear(COMBAT_STORE);
+}
+
+/** Full local-state reset — play data *and* authored content. */
 export async function clearAll(): Promise<void> {
   const db = await getDb();
   await db.clear(CHRONICLE_STORE);

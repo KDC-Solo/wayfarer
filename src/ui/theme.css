@@ -1452,3 +1452,21 @@ button.ghost.icon {
 .orient > div {
   flex: 1;
 }
+
+/* ---------- destructive actions ---------- */
+
+.danger-zone {
+  border-color: var(--danger);
+}
+
+button.destructive {
+  border-color: var(--danger);
+  color: var(--danger);
+  font-weight: 700;
+}
+
+button.destructive:hover {
+  background: var(--danger);
+  border-color: var(--danger);
+  color: var(--bg);
+}
