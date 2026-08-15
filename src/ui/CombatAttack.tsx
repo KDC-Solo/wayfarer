@@ -18,6 +18,7 @@ import {
   type SkillRollResult,
 } from '../engine/dice.ts';
 import { completeStep } from '../engine/stepRunner.ts';
+import { injuryOptions, totalProtection, type Weapon } from '../engine/gear.ts';
 import type { Chronicle, Hero, LogEntry } from '../engine/types.ts';
 import { RollPanel } from './RollPanel.tsx';
 
@@ -45,13 +46,20 @@ function autoRollCheck(diceCount: number, targetNumber: number, favourMode: Favo
  */
 function ProtectionRollForm({
   targetName,
+  defaultDice = 0,
+  defaultTn = 0,
   onResolved,
 }: {
   targetName: string;
+  /** Filled from the wearer's armour and the attacking weapon's Injury
+   * rating when those are known, so the player confirms rather than
+   * looks them up mid-fight. */
+  defaultDice?: number;
+  defaultTn?: number;
   onResolved: (result: SkillRollResult) => void;
 }) {
-  const [dice, setDice] = useState(0);
-  const [tn, setTn] = useState(0);
+  const [dice, setDice] = useState(defaultDice);
+  const [tn, setTn] = useState(defaultTn);
 
   return (
     <fieldset>
@@ -106,6 +114,9 @@ export function AttackStepUI({
   const [damage, setDamage] = useState(0);
   const [piercing, setPiercing] = useState(false);
   const [stage, setStage] = useState<AttackStage>({ kind: 'rolling' });
+  const heroWeapons = hero.weapons ?? [];
+  const [weaponId, setWeaponId] = useState(heroWeapons[0]?.id ?? '');
+  const weapon: Weapon | undefined = heroWeapons.find((w) => w.id === weaponId);
 
   const target = combat.adversaries.find((a) => a.id === targetId);
   const proficiencies = Object.keys(hero.combatProficiencies).length > 0 ? hero.combatProficiencies : null;
@@ -143,6 +154,29 @@ export function AttackStepUI({
             </label>
           </>
         )}
+        {heroWeapons.length > 0 && (
+          <label>
+            Weapon
+            <select
+              value={weaponId}
+              onChange={(e) => {
+                setWeaponId(e.target.value);
+                const picked = heroWeapons.find((w) => w.id === e.target.value);
+                if (picked) {
+                  setDamage(picked.damage);
+                  const injuries = injuryOptions(picked);
+                  if (injuries.length > 0) setPierceThreshold(injuries[0]);
+                }
+              }}
+            >
+              {heroWeapons.map((w) => (
+                <option key={w.id} value={w.id}>
+                  {w.name} — damage {w.damage}, Injury {w.injury}
+                </option>
+              ))}
+            </select>
+          </label>
+        )}
         <label>
           Bonus Success dice (e.g. from Gain Ground)
           <input
@@ -169,6 +203,7 @@ export function AttackStepUI({
           diceInputMode={chronicle.diceInputMode}
           skillOptions={proficiencies ?? undefined}
           skillLabel={proficiencies ? 'Proficiency' : 'Skill'}
+          initialSkillName={weapon?.proficiency}
           initialTargetNumber={stanceTn ?? undefined}
           successDiceDelta={diceDelta}
           onResolved={({ skillName, result, inputMode }) => {
@@ -243,7 +278,7 @@ export function AttackStepUI({
           Hit{target ? ` on ${target.name}` : ''}! Feat die: {String(result.featDieUsed)}.
         </p>
         <label>
-          Damage (from your weapon's stats)
+          Damage{weapon ? ` (${weapon.name})` : " (from your weapon's stats)"}
           <input type="number" min={0} value={damage} onChange={(e) => setDamage(Number(e.target.value))} />
         </label>
         <label>
@@ -290,6 +325,8 @@ export function AttackStepUI({
   return (
     <ProtectionRollForm
       targetName={heldTarget?.name ?? 'the adversary'}
+      defaultDice={heldTarget?.armourRating ?? 0}
+      defaultTn={Number(injuryOptions(weapon ?? ({ injury: '' } as Weapon))[0] ?? 0)}
       onResolved={(result) => {
         const entries = [...stage.heldEntries];
         let nextCombat = stage.combat;
@@ -523,6 +560,7 @@ export function AdversaryAttackPanel({
   return (
     <ProtectionRollForm
       targetName={hero.name}
+      defaultDice={totalProtection(hero.armour ?? [])}
       onResolved={(result) => {
         const entries = [...stage.heldEntries];
         let nextChronicle = stage.chronicle;

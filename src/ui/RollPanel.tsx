@@ -73,6 +73,14 @@ export function RollPanel({
   );
   const [attribute, setAttribute] = useState<AttributeName>('heart');
   const [favourMode, setFavourMode] = useState<FavourMode>(initialFavourMode ?? 'normal');
+  /** A Favoured skill rolls two Feat dice and keeps the better. The
+   * hero's sheet already records which are Favoured, so the roll starts
+   * there instead of making the player remember every time — still
+   * overridable, since circumstances change favour too. */
+  const isFavouredSkill = (hero.favouredSkills ?? []).includes(skillName);
+  const [favourTouched, setFavourTouched] = useState(false);
+  const effectiveFavour: FavourMode =
+    favourTouched || initialFavourMode ? favourMode : isFavouredSkill ? 'favoured' : favourMode;
   const [hopeSpent, setHopeSpent] = useState(false);
   /** N7/F5.7 — every computed value is overridable; blank = computed TN. */
   const [tnOverride, setTnOverride] = useState<string>(
@@ -93,7 +101,7 @@ export function RollPanel({
       skillRank,
       attributeValue,
       companySize,
-      favourMode,
+      favourMode: effectiveFavour,
       weary,
       successDiceDelta,
       targetNumberOverride: tn !== undefined && Number.isFinite(tn) ? tn : undefined,
@@ -126,7 +134,7 @@ export function RollPanel({
   function finish(requirement: RollRequirement, featDice: FeatDieFace[], successDice: SuccessDieFace[]) {
     const result = resolveSkillRoll({
       featDice,
-      favourMode,
+      favourMode: effectiveFavour,
       successDice,
       targetNumber: requirement.targetNumber,
       weary,
@@ -204,8 +212,14 @@ export function RollPanel({
               </select>
             </label>
             <label>
-              Favour
-              <select value={favourMode} onChange={(e) => setFavourMode(e.target.value as FavourMode)}>
+              Favour{isFavouredSkill && !favourTouched ? ' (favoured skill)' : ''}
+              <select
+                value={effectiveFavour}
+                onChange={(e) => {
+                  setFavourTouched(true);
+                  setFavourMode(e.target.value as FavourMode);
+                }}
+              >
                 <option value="normal">Normal</option>
                 <option value="favoured">Favoured</option>
                 <option value="ill-favoured">Ill-favoured</option>

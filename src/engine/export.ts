@@ -8,11 +8,22 @@ import type { LoreTable } from './loreTable.ts';
 import { validateDicePack, type DicePack } from './dicePack.ts';
 import { validateCalling, validateCulture, type Calling, type Culture } from './culture.ts';
 import {
+  validateAdversaryTemplate,
+  validateArmour,
+  validateWeapon,
+  type AdversaryTemplate,
+  type Armour,
+  type Weapon,
+} from './gear.ts';
+import {
   appendLogEntry,
   clearAll,
   getAllCombats,
   getAllCallings,
+  getAllArmour,
+  getAllBestiary,
   getAllCultures,
+  getAllWeapons,
   getAllDicePacks,
   getAllFellowshipPhases,
   getAllJourneys,
@@ -25,7 +36,10 @@ import {
   putChronicle,
   putCombat,
   putCalling,
+  putArmour,
+  putBestiaryEntry,
   putCulture,
+  putWeapon,
   putDicePack,
   putFellowshipPhase,
   putJourney,
@@ -60,6 +74,11 @@ export interface StateEnvelope {
    * none — absent in pre-10 exports; readers default to []. */
   cultures: Culture[];
   callings: Calling[];
+  /** Reference libraries (F5.x ergonomics). Licensed content, so the app
+   * ships none — absent in pre-11 exports; readers default to []. */
+  weapons: Weapon[];
+  armour: Armour[];
+  bestiary: AdversaryTemplate[];
 }
 
 export class ImportError extends Error {}
@@ -79,6 +98,9 @@ export async function exportState(): Promise<StateEnvelope> {
     dicePacks,
     cultures,
     callings,
+    weapons,
+    armour,
+    bestiary,
   ] =
     await Promise.all([
       getAllLogEntries(),
@@ -92,6 +114,9 @@ export async function exportState(): Promise<StateEnvelope> {
       getAllDicePacks(),
       getAllCultures(),
       getAllCallings(),
+      getAllWeapons(),
+      getAllArmour(),
+      getAllBestiary(),
     ]);
   return {
     format: 'wayfarer-export',
@@ -109,6 +134,9 @@ export async function exportState(): Promise<StateEnvelope> {
     dicePacks,
     cultures,
     callings,
+    weapons,
+    armour,
+    bestiary,
   };
 }
 
@@ -161,6 +189,9 @@ export interface ContentPackResult {
   loreTablesFilled: number;
   culturesAdded: number;
   callingsAdded: number;
+  weaponsAdded: number;
+  armourAdded: number;
+  bestiaryAdded: number;
 }
 
 export async function importContentPack(json: string): Promise<ContentPackResult> {
@@ -178,13 +209,22 @@ export async function importContentPack(json: string): Promise<ContentPackResult
   const incomingLore = pack.loreTables ?? [];
   const incomingCultures = pack.cultures ?? [];
   const incomingCallings = pack.callings ?? [];
-  if (
-    incomingTables.length === 0 &&
-    incomingLore.length === 0 &&
-    incomingCultures.length === 0 &&
-    incomingCallings.length === 0
-  ) {
-    throw new ImportError('No tables, cultures or callings found in this file.');
+  const incomingWeapons = pack.weapons ?? [];
+  const incomingArmour = pack.armour ?? [];
+  // Accept "adversaries" as well: it reads more naturally when authoring
+  // a pack by hand, and a silent mismatch here imports nothing.
+  const incomingBestiary =
+    pack.bestiary ?? ((pack as { adversaries?: AdversaryTemplate[] }).adversaries ?? []);
+  const totalIncoming =
+    incomingTables.length +
+    incomingLore.length +
+    incomingCultures.length +
+    incomingCallings.length +
+    incomingWeapons.length +
+    incomingArmour.length +
+    incomingBestiary.length;
+  if (totalIncoming === 0) {
+    throw new ImportError('No tables, cultures, callings, gear or adversaries found in this file.');
   }
 
   const existing = await getAllOracleTables();
@@ -195,6 +235,9 @@ export async function importContentPack(json: string): Promise<ContentPackResult
     loreTablesFilled: 0,
     culturesAdded: 0,
     callingsAdded: 0,
+    weaponsAdded: 0,
+    armourAdded: 0,
+    bestiaryAdded: 0,
   };
 
   for (const table of incomingTables) {
@@ -238,6 +281,19 @@ export async function importContentPack(json: string): Promise<ContentPackResult
     result.callingsAdded++;
   }
 
+  for (const raw of incomingWeapons) {
+    await putWeapon(validateWeapon(raw));
+    result.weaponsAdded++;
+  }
+  for (const raw of incomingArmour) {
+    await putArmour(validateArmour(raw));
+    result.armourAdded++;
+  }
+  for (const raw of incomingBestiary) {
+    await putBestiaryEntry(validateAdversaryTemplate(raw));
+    result.bestiaryAdded++;
+  }
+
   return result;
 }
 
@@ -275,6 +331,15 @@ export async function importState(json: string): Promise<void> {
   }
   for (const calling of envelope.callings ?? []) {
     await putCalling(validateCalling(calling));
+  }
+  for (const weapon of envelope.weapons ?? []) {
+    await putWeapon(validateWeapon(weapon));
+  }
+  for (const piece of envelope.armour ?? []) {
+    await putArmour(validateArmour(piece));
+  }
+  for (const entry of envelope.bestiary ?? (envelope as { adversaries?: AdversaryTemplate[] }).adversaries ?? []) {
+    await putBestiaryEntry(validateAdversaryTemplate(entry));
   }
   for (const pack of envelope.dicePacks ?? []) {
     // Validated on the way in: packs are the one part of the envelope a

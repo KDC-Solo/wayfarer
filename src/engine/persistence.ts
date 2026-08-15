@@ -8,6 +8,7 @@ import type { Combat } from './combat.ts';
 import type { LoreTable } from './loreTable.ts';
 import type { DicePack } from './dicePack.ts';
 import type { Calling, Culture } from './culture.ts';
+import type { AdversaryTemplate, Armour, Weapon } from './gear.ts';
 
 // IndexedDB for chronicle + log + oracle tables + step templates + journeys
 // + routes + Fellowship phases (PRD §9 — volume grows unbounded over a
@@ -15,7 +16,7 @@ import type { Calling, Culture } from './culture.ts';
 // database = one campaign; the app does not manage multiple chronicles.
 
 const DB_NAME = 'wayfarer';
-const DB_VERSION = 8;
+const DB_VERSION = 9;
 const CHRONICLE_STORE = 'chronicle';
 const LOG_STORE = 'log';
 const ORACLE_TABLE_STORE = 'oracleTables';
@@ -28,6 +29,9 @@ const LORE_TABLE_STORE = 'loreTables';
 const DICE_PACK_STORE = 'dicePacks';
 const CULTURE_STORE = 'cultures';
 const CALLING_STORE = 'callings';
+const WEAPON_STORE = 'weapons';
+const ARMOUR_STORE = 'armour';
+const BESTIARY_STORE = 'bestiary';
 const SINGLETON_KEY = 'current';
 
 interface WayfarerDB extends DBSchema {
@@ -80,6 +84,18 @@ interface WayfarerDB extends DBSchema {
     key: string;
     value: Calling;
   };
+  [WEAPON_STORE]: {
+    key: string;
+    value: Weapon;
+  };
+  [ARMOUR_STORE]: {
+    key: string;
+    value: Armour;
+  };
+  [BESTIARY_STORE]: {
+    key: string;
+    value: AdversaryTemplate;
+  };
 }
 
 let dbPromise: Promise<IDBPDatabase<WayfarerDB>> | null = null;
@@ -117,6 +133,11 @@ function getDb(): Promise<IDBPDatabase<WayfarerDB>> {
         if (oldVersion < 8) {
           db.createObjectStore(CULTURE_STORE, { keyPath: 'id' });
           db.createObjectStore(CALLING_STORE, { keyPath: 'id' });
+        }
+        if (oldVersion < 9) {
+          db.createObjectStore(WEAPON_STORE, { keyPath: 'id' });
+          db.createObjectStore(ARMOUR_STORE, { keyPath: 'id' });
+          db.createObjectStore(BESTIARY_STORE, { keyPath: 'id' });
         }
       },
     });
@@ -272,6 +293,36 @@ export async function putCalling(calling: Calling): Promise<void> {
   await db.put(CALLING_STORE, calling);
 }
 
+export async function getAllWeapons(): Promise<Weapon[]> {
+  const db = await getDb();
+  return db.getAll(WEAPON_STORE);
+}
+
+export async function putWeapon(weapon: Weapon): Promise<void> {
+  const db = await getDb();
+  await db.put(WEAPON_STORE, weapon);
+}
+
+export async function getAllArmour(): Promise<Armour[]> {
+  const db = await getDb();
+  return db.getAll(ARMOUR_STORE);
+}
+
+export async function putArmour(armour: Armour): Promise<void> {
+  const db = await getDb();
+  await db.put(ARMOUR_STORE, armour);
+}
+
+export async function getAllBestiary(): Promise<AdversaryTemplate[]> {
+  const db = await getDb();
+  return db.getAll(BESTIARY_STORE);
+}
+
+export async function putBestiaryEntry(entry: AdversaryTemplate): Promise<void> {
+  const db = await getDb();
+  await db.put(BESTIARY_STORE, entry);
+}
+
 /**
  * Clears everything belonging to the *campaign* — the chronicle, the
  * log, and every run through it — while keeping the content the player
@@ -309,4 +360,7 @@ export async function clearAll(): Promise<void> {
   await db.clear(DICE_PACK_STORE);
   await db.clear(CULTURE_STORE);
   await db.clear(CALLING_STORE);
+  await db.clear(WEAPON_STORE);
+  await db.clear(ARMOUR_STORE);
+  await db.clear(BESTIARY_STORE);
 }

@@ -1,8 +1,13 @@
 import { useState } from 'react';
 import type { Hero } from '../engine/types.ts';
+import { totalLoad, totalProtection, type Armour, type Weapon } from '../engine/gear.ts';
 
 interface Props {
   hero: Hero;
+  /** Imported reference libraries; empty until the player brings their
+   * own, in which case the gear section simply doesn't appear. */
+  weaponLibrary: Weapon[];
+  armourLibrary: Armour[];
   onChange: (hero: Hero) => void;
   onClose: () => void;
 }
@@ -16,7 +21,7 @@ interface Props {
 // Names are open strings throughout (NG2): the eighteen seeded skills are
 // a starting point, and proficiency names come from the player's own book.
 
-export function HeroSheet({ hero, onChange, onClose }: Props) {
+export function HeroSheet({ hero, weaponLibrary, armourLibrary, onChange, onClose }: Props) {
   const [newProficiency, setNewProficiency] = useState('');
   const [newSkill, setNewSkill] = useState('');
 
@@ -179,10 +184,99 @@ export function HeroSheet({ hero, onChange, onClose }: Props) {
         </div>
       </fieldset>
 
+      {(weaponLibrary.length > 0 || armourLibrary.length > 0) && (
+        <fieldset>
+          <legend>War gear</legend>
+          <p className="hint">
+            Picked from your imported libraries, so attacks fill in damage and Injury for you.
+            {(hero.weapons?.length || hero.armour?.length) ? (
+              <>
+                {' '}Load {totalLoad(hero.weapons ?? [], hero.armour ?? [])} · Protection{' '}
+                {totalProtection(hero.armour ?? [])}d
+              </>
+            ) : null}
+          </p>
+          <LibraryPicker
+            label="Weapons"
+            library={weaponLibrary}
+            chosen={hero.weapons ?? []}
+            describe={(w) => `${w.name} (${w.damage}/${w.injury})`}
+            onChange={(next) => setField('weapons', next)}
+          />
+          <LibraryPicker
+            label="Armour"
+            library={armourLibrary}
+            chosen={hero.armour ?? []}
+            describe={(a) => `${a.name} (${a.protection}d)`}
+            onChange={(next) => setField('armour', next)}
+          />
+        </fieldset>
+      )}
+
       <ListField label="Virtues" values={hero.virtues} onChange={(v) => setField('virtues', v)} />
       <ListField label="Rewards" values={hero.rewards} onChange={(v) => setField('rewards', v)} />
       <ListField label="Gear" values={hero.gear} onChange={(v) => setField('gear', v)} />
     </section>
+  );
+}
+
+/** Add-from-library / remove, for weapons and armour alike. */
+function LibraryPicker<T extends { id: string; name: string }>({
+  label,
+  library,
+  chosen,
+  describe,
+  onChange,
+}: {
+  label: string;
+  library: T[];
+  chosen: T[];
+  describe: (item: T) => string;
+  onChange: (next: T[]) => void;
+}) {
+  const [pick, setPick] = useState('');
+  if (library.length === 0) return null;
+  return (
+    <div>
+      <ul className="chip-list">
+        {chosen.map((item, i) => (
+          <li key={`${item.id}-${i}`}>
+            <span>{describe(item)}</span>
+            <button
+              className="ghost"
+              aria-label={`Remove ${item.name}`}
+              onClick={() => onChange(chosen.filter((_, j) => j !== i))}
+            >
+              ✕
+            </button>
+          </li>
+        ))}
+        {chosen.length === 0 && <li className="empty">None</li>}
+      </ul>
+      <div className="quickstart-row">
+        <label className="grow">
+          Add {label.toLowerCase()}
+          <select value={pick} onChange={(e) => setPick(e.target.value)}>
+            <option value="">Choose…</option>
+            {library.map((item) => (
+              <option key={item.id} value={item.id}>
+                {describe(item)}
+              </option>
+            ))}
+          </select>
+        </label>
+        <button
+          onClick={() => {
+            const item = library.find((i) => i.id === pick);
+            if (item) onChange([...chosen, item]);
+            setPick('');
+          }}
+          disabled={!pick}
+        >
+          Add
+        </button>
+      </div>
+    </div>
   );
 }
 

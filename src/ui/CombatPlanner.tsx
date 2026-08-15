@@ -10,12 +10,17 @@ import {
   type CombatStance,
   type StanceTargetNumbers,
 } from '../engine/combat.ts';
+import { adversaryFromTemplate } from '../engine/combat.ts';
+import type { AdversaryTemplate } from '../engine/gear.ts';
 import type { StepTemplate } from '../engine/stepTemplate.ts';
 import type { Hero } from '../engine/types.ts';
 
 interface Props {
   company: Hero[];
   stepTemplates: StepTemplate[];
+  /** Imported bestiary — pick a foe instead of retyping its stat block
+   * every fight. Empty until the player imports one. */
+  bestiary: AdversaryTemplate[];
   onBegin: (combat: Combat) => void;
 }
 
@@ -24,7 +29,7 @@ interface Props {
 // Strider Mode p.15), and the stance TN table (core-rulebook numbers the
 // player enters once per fight; blank means the attack UI asks per roll).
 
-export function CombatPlanner({ company, stepTemplates, onBegin }: Props) {
+export function CombatPlanner({ company, stepTemplates, bestiary, onBegin }: Props) {
   const defaultTemplate =
     stepTemplates.find((t) => t.steps.some((s) => s.type === 'attack')) ?? stepTemplates[0];
   const [name, setName] = useState('');
@@ -38,6 +43,7 @@ export function CombatPlanner({ company, stepTemplates, onBegin }: Props) {
   const [advEndurance, setAdvEndurance] = useState(0);
   const [advHate, setAdvHate] = useState(0);
   const [advNotes, setAdvNotes] = useState('');
+  const [bestiaryPick, setBestiaryPick] = useState('');
 
   if (company.length === 0) {
     return (
@@ -118,6 +124,32 @@ export function CombatPlanner({ company, stepTemplates, onBegin }: Props) {
           ))}
           {adversaries.length === 0 && <li>None yet — add each foe from your own stat blocks.</li>}
         </ul>
+        {bestiary.length > 0 && (
+          <div className="quickstart-row">
+            <label className="grow">
+              From your bestiary
+              <select value={bestiaryPick} onChange={(e) => setBestiaryPick(e.target.value)}>
+                <option value="">Choose a foe…</option>
+                {bestiary.map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.name} — Endurance {t.endurance}, Hate {t.hate}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <button
+              onClick={() => {
+                const template = bestiary.find((t) => t.id === bestiaryPick);
+                if (!template) return;
+                setAdversaries((a) => [...a, adversaryFromTemplate(template)]);
+                setBestiaryPick('');
+              }}
+              disabled={!bestiaryPick}
+            >
+              Add
+            </button>
+          </div>
+        )}
         <label>
           Name
           <input value={advName} onChange={(e) => setAdvName(e.target.value)} />

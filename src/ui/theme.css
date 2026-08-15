@@ -1476,3 +1476,8 @@ button.destructive:hover {
   flex-wrap: wrap;
   gap: var(--space-2);
 }
+
+.quickstart-row label.grow {
+  flex: 1;
+  margin: 0;
+}

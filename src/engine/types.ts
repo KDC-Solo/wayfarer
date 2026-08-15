@@ -1,6 +1,7 @@
 // Core data model — PRD §7.
 
 import type { EyeAwarenessState } from './eyeAwareness.ts';
+import type { Armour, Weapon } from './gear.ts';
 
 export type DiceInputMode = 'app-rolls' | 'player-rolls' | 'hybrid';
 
@@ -77,6 +78,11 @@ export interface Hero {
   distinctiveFeatures?: string[];
   /** Derived from the culture at creation (WITS + culture base). */
   parry?: number;
+  /** Chosen from the imported libraries. Stored whole rather than by id
+   * so a hero keeps working if the library entry is later deleted or
+   * re-imported with new ids. */
+  weapons?: Weapon[];
+  armour?: Armour[];
 }
 
 export interface Chronicle {
@@ -135,4 +141,4 @@ export interface LogEntry {
 // Bumped for the Eye of Mordor tracker (F8.x). Backwards compatible with
 // versions 5-8: every field added since 5 is optional, and newer
 // collections simply may be absent from older exports.
-export const SCHEMA_VERSION = 10;
+export const SCHEMA_VERSION = 11;

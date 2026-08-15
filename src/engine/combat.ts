@@ -101,6 +101,10 @@ export interface Adversary {
   /** Free text — stat-block numbers the player wants at hand (Parry,
    * Armour, weapon ratings…). Never interpreted by the app. */
   notes: string;
+  /** Protection dice, when this adversary was spawned from a bestiary
+   * entry — lets a Piercing Blow's Protection roll prefill itself. */
+  armourRating?: number;
+  parry?: number;
 }
 
 export function createAdversary(input: {
@@ -108,6 +112,8 @@ export function createAdversary(input: {
   endurance?: number;
   hate?: number;
   notes?: string;
+  armourRating?: number;
+  parry?: number;
 }): Adversary {
   return {
     id: crypto.randomUUID(),
@@ -117,7 +123,33 @@ export function createAdversary(input: {
     status: 'active',
     wounded: false,
     notes: input.notes ?? '',
+    armourRating: input.armourRating,
+    parry: input.parry,
   };
+}
+
+/** Spawn a live combatant from a bestiary entry (gear.ts) — the template
+ * is reference data and must not be mutated by the fight. */
+export function adversaryFromTemplate(template: {
+  name: string;
+  endurance: number;
+  hate: number;
+  parry: number;
+  armour: number;
+  attacks: Array<{ name: string; rating: number; damage: number; injury: number; special: string }>;
+  fellAbilities: string;
+}): Adversary {
+  const attacks = template.attacks
+    .map((a) => `${a.name} ${a.rating} (${a.damage}/${a.injury}${a.special ? `, ${a.special}` : ''})`)
+    .join('; ');
+  return createAdversary({
+    name: template.name,
+    endurance: template.endurance,
+    hate: template.hate,
+    parry: template.parry,
+    armourRating: template.armour,
+    notes: [attacks, template.fellAbilities].filter(Boolean).join(' — ').slice(0, 400),
+  });
 }
 
 export type CombatPhaseKind = 'opening-volley' | 'round';

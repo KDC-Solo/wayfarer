@@ -19,7 +19,10 @@ import {
   appendLogEntry,
   clearAll,
   getAllCallings,
+  getAllArmour,
+  getAllBestiary,
   getAllCultures,
+  getAllWeapons,
   clearPlayData,
   deleteOracleTable,
   deleteStepTemplate,
@@ -81,6 +84,7 @@ import { EyePanel } from './ui/EyePanel.tsx';
 import { NewCampaign } from './ui/NewCampaign.tsx';
 import { CharacterCreation } from './ui/CharacterCreation.tsx';
 import type { Calling, Culture } from './engine/culture.ts';
+import type { AdversaryTemplate, Armour, Weapon } from './engine/gear.ts';
 import {
   createEyeAwareness,
   eyeIncreaseForRoll,
@@ -122,6 +126,9 @@ export default function App() {
   const [dicePacks, setDicePacks] = useState<DicePack[]>([]);
   const [cultures, setCultures] = useState<Culture[]>([]);
   const [callings, setCallings] = useState<Calling[]>([]);
+  const [weapons, setWeapons] = useState<Weapon[]>([]);
+  const [armour, setArmour] = useState<Armour[]>([]);
+  const [bestiary, setBestiary] = useState<AdversaryTemplate[]>([]);
   const [creating, setCreating] = useState(false);
   const [activeDicePackId, setActiveDicePackId] = useState<string | null>(
     () => localStorage.getItem(ACTIVE_DICE_PACK_KEY),
@@ -194,6 +201,9 @@ export default function App() {
     setDicePacks(await getAllDicePacks());
     setCultures(await getAllCultures());
     setCallings(await getAllCallings());
+    setWeapons(await getAllWeapons());
+    setArmour(await getAllArmour());
+    setBestiary(await getAllBestiary());
 
     const loadedJourneys = await getAllJourneys();
     setJourneys(loadedJourneys);
@@ -612,6 +622,9 @@ export default function App() {
         r.loreTablesFilled && 'filled the Lore Table',
         r.culturesAdded && `${r.culturesAdded} cultures`,
         r.callingsAdded && `${r.callingsAdded} callings`,
+        r.weaponsAdded && `${r.weaponsAdded} weapons`,
+        r.armourAdded && `${r.armourAdded} armour`,
+        r.bestiaryAdded && `${r.bestiaryAdded} adversaries`,
       ].filter(Boolean);
       setStatus({ tone: 'success', text: `Imported — ${bits.join(', ')}. Saved to this browser.` });
     } catch (err) {
@@ -788,7 +801,13 @@ export default function App() {
                     <HeroForm onCreate={handleAddHero} onCancel={() => setShowHeroForm(false)} />
                   ))}
                 {sheetHero && (
-                  <HeroSheet hero={sheetHero} onChange={handleUpdateHero} onClose={() => setSheetHeroId(null)} />
+                  <HeroSheet
+                    hero={sheetHero}
+                    weaponLibrary={weapons}
+                    armourLibrary={armour}
+                    onChange={handleUpdateHero}
+                    onClose={() => setSheetHeroId(null)}
+                  />
                 )}
               </>
             )}
@@ -852,6 +871,7 @@ export default function App() {
                 <CombatPlanner
                   company={chronicle.company}
                   stepTemplates={stepTemplates}
+                  bestiary={bestiary}
                   onBegin={handleBeginCombat}
                 />
               ))}

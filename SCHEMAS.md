@@ -111,6 +111,32 @@ differ per culture — Endurance is `STRENGTH + derived.endurance`.
 Both are rejected on import if malformed: a culture needs at least one well-formed
 attribute set, and both need an id and a name.
 
+## Weapons, armour and bestiary
+
+Reference libraries. All rulebook content, so the app ships none; combat works without
+them (asking for damage and Injury by hand) and fills those in once they exist.
+
+```jsonc
+// weapons[]
+{ "id": "w1", "name": "Sword", "damage": 4, "injury": "16", "load": 2,
+  "proficiency": "Swords", "notes": "", "sourceReference": "core rules, p.52" }
+
+// armour[] — `additive` marks a piece that adds to a suit (a helm) rather than replacing it
+{ "id": "a1", "name": "Mail-shirt", "protection": 3, "additive": false, "load": 9,
+  "type": "Mail armour", "sourceReference": "core rules, p.52" }
+
+// bestiary[] (also accepted as "adversaries")
+{ "id": "b1", "name": "Orc Soldier", "attributeLevel": 4, "endurance": 12, "might": 1,
+  "hate": 2, "parry": 3, "armour": 2,
+  "attacks": [{ "name": "Axe", "rating": 3, "damage": 5, "injury": 18, "special": "" }],
+  "fellAbilities": "…", "sourceReference": "core rules, p.150" }
+```
+
+`injury` is free text because the book gives some weapons a grip-dependent rating
+("16 (1h)/18 (2h)"). Total Protection is the best non-additive piece plus every additive
+one. A bestiary entry is a *template*: spawning a foe copies it into the fight, so the
+library is never mutated by combat.
+
 ## Step template
 
 ```jsonc
@@ -157,6 +183,9 @@ The Export button writes one JSON document:
   "loreTables": [],                 // absent in pre-7 exports; readers default to []
   "cultures": [],                   // absent in pre-10 exports; readers default to []
   "callings": [],                   // absent in pre-10 exports; readers default to []
+  "weapons": [],                    // absent in pre-11 exports; readers default to []
+  "armour": [],                     // absent in pre-11 exports; readers default to []
+  "bestiary": []                    // also accepted as "adversaries"
   "dicePacks": []                   // absent in pre-8 exports; readers default to []
 }
 ```
